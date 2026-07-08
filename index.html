@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roaring Fork Watershed Directory</title>
+
+  <!-- MapLibre GL JS -->
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f4f4f0;
+    }
+
+    header {
+      background: #1a3a2a;
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    header p {
+      font-size: 13px;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+
+    #map {
+      width: 100%;
+      height: 520px;
+    }
+
+    .maplibregl-popup-content {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      max-width: 260px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .popup-org-name {
+      font-weight: 600;
+      font-size: 15px;
+      color: #1a3a2a;
+      margin-bottom: 4px;
+    }
+
+    .popup-category {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      background: #e0f0e8;
+      color: #1a5c38;
+      padding: 2px 8px;
+      border-radius: 99px;
+      margin-bottom: 8px;
+    }
+
+    .popup-desc {
+      font-size: 13px;
+      color: #444;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .popup-link {
+      font-size: 13px;
+      color: #1a5c38;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .popup-link:hover { text-decoration: underline; }
+
+    .map-note {
+      font-size: 12px;
+      color: #888;
+      padding: 8px 16px;
+      background: #fff;
+      border-top: 1px solid #e8e8e8;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Roaring Fork Watershed Directory</h1>
+    <p>Pitkin County Healthy Rivers · Water management organizations across the watershed</p>
+  </div>
+</header>
+
+<div id="map" role="region" aria-label="Roaring Fork Watershed map"></div>
+<div class="map-note">Prototype · Snowmass Water &amp; Sanitation District boundary only · More organizations coming soon</div>
+
+<script>
+  const map = new maplibregl.Map({
+    container: 'map',
+    style: {
+      version: 8,
+      sources: {
+        'osm-tiles': {
+          type: 'raster',
+          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }
+      },
+      layers: [{
+        id: 'osm',
+        type: 'raster',
+        source: 'osm-tiles',
+        minzoom: 0,
+        maxzoom: 19
+      }]
+    },
+    center: [-106.95, 39.21],
+    zoom: 12,
+    attributionControl: true
+  });
+
+  // Navigation controls
+  map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+  // Load SWSD boundary
+  map.on('load', () => {
+
+    fetch('data/clean/swsd.geojson')
+      .then(res => res.json())
+      .then(data => {
+
+        map.addSource('orgs', {
+          type: 'geojson',
+          data: data
+        });
+
+        // Fill layer
+        map.addLayer({
+          id: 'org-fill',
+          type: 'fill',
+          source: 'orgs',
+          paint: {
+            'fill-color': '#2a7a4f',
+            'fill-opacity': 0.2
+          }
+        });
+
+        // Outline layer
+        map.addLayer({
+          id: 'org-outline',
+          type: 'line',
+          source: 'orgs',
+          paint: {
+            'line-color': '#1a5c38',
+            'line-width': 2
+          }
+        });
+
+        // Hover highlight
+        map.addLayer({
+          id: 'org-fill-hover',
+          type: 'fill',
+          source: 'orgs',
+          paint: {
+            'fill-color': '#2a7a4f',
+            'fill-opacity': [
+              'case',
+              ['boolean', ['feature-state', 'hover'], false],
+              0.4,
+              0
+            ]
+          }
+        });
+
+        // Cursor change on hover
+        map.on('mouseenter', 'org-fill', () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', 'org-fill', () => {
+          map.getCanvas().style.cursor = '';
+        });
+
+        // Popup on click
+        map.on('click', 'org-fill', (e) => {
+          const props = e.features[0].properties;
+          const website = props.website
+            ? `<a class="popup-link" href="https://${props.website}" target="_blank" rel="noopener">Visit website →</a>`
+            : '';
+
+          new maplibregl.Popup({ offset: 12, maxWidth: '280px' })
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <div class="popup-org-name">${props.org_name}</div>
+              <div class="popup-category">${props.category}</div>
+              <div class="popup-desc">Service area boundary. General perimeter.</div>
+              ${website}
+            `)
+            .addTo(map);
+        });
+
+      })
+      .catch(err => console.error('Failed to load org GeoJSON:', err));
+  });
+</script>
+
+</body>
+</html>

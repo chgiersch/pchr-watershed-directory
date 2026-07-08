@@ -105,7 +105,7 @@
 </header>
 
 <div id="map" role="region" aria-label="Roaring Fork Watershed map"></div>
-<div class="map-note">Prototype · Snowmass Water &amp; Sanitation District boundary only · More organizations coming soon</div>
+<div class="map-note">Prototype · SWSD boundary + Roaring Fork/Colorado River watershed reference layers · More organizations coming soon</div>
 
 <script>
   const map = new maplibregl.Map({
@@ -136,84 +136,157 @@
   // Navigation controls
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-  // Load SWSD boundary
+  // Load reference layers + org boundaries together, so we can control stacking order
+  // regardless of which fetch finishes first.
   map.on('load', () => {
 
-    fetch('data/clean/swsd.geojson')
-      .then(res => res.json())
-      .then(data => {
+    const loadJSON = url => fetch(url).then(res => res.json());
 
-        map.addSource('orgs', {
-          type: 'geojson',
-          data: data
-        });
+    Promise.all([
+      loadJSON('data/reference/upper_colorado_region.geojson'),
+      loadJSON('data/reference/co_west_slope_basin.geojson'),
+      loadJSON('data/reference/huc8_roaring_fork.geojson'),
+      loadJSON('data/clean/swsd.geojson')
+    ]).then(([ucr, basin, huc8, orgs]) => {
 
-        // Fill layer
-        map.addLayer({
-          id: 'org-fill',
-          type: 'fill',
-          source: 'orgs',
-          paint: {
-            'fill-color': '#2a7a4f',
-            'fill-opacity': 0.2
-          }
-        });
+      // ---- Upper Colorado Region (HUC-2) - light context outline, fades out on zoom in ----
+      map.addSource('upper-colorado-region', { type: 'geojson', data: ucr });
+      map.addLayer({
+        id: 'ucr-outline',
+        type: 'line',
+        source: 'upper-colorado-region',
+        maxzoom: 9,
+        paint: {
+          'line-color': '#999999',
+          'line-width': 1,
+          'line-dasharray': [2, 2],
+          'line-opacity': 0.6
+        }
+      });
 
-        // Outline layer
-        map.addLayer({
-          id: 'org-outline',
-          type: 'line',
-          source: 'orgs',
-          paint: {
-            'line-color': '#1a5c38',
-            'line-width': 2
-          }
-        });
+      // ---- Colorado West Slope / Colorado River Basin in CO - basin-scale outline ----
+      map.addSource('co-west-slope-basin', { type: 'geojson', data: basin });
+      map.addLayer({
+        id: 'basin-fill',
+        type: 'fill',
+        source: 'co-west-slope-basin',
+        paint: {
+          'fill-color': '#3a6ea5',
+          'fill-opacity': 0.03
+        }
+      });
+      map.addLayer({
+        id: 'basin-outline',
+        type: 'line',
+        source: 'co-west-slope-basin',
+        paint: {
+          'line-color': '#3a6ea5',
+          'line-width': 1,
+          'line-dasharray': [3, 2],
+          'line-opacity': 0.7
+        }
+      });
 
-        // Hover highlight
-        map.addLayer({
-          id: 'org-fill-hover',
-          type: 'fill',
-          source: 'orgs',
-          paint: {
-            'fill-color': '#2a7a4f',
-            'fill-opacity': [
-              'case',
-              ['boolean', ['feature-state', 'hover'], false],
-              0.4,
-              0
-            ]
-          }
-        });
+      // ---- Roaring Fork HUC-8 - local watershed boundary ----
+      map.addSource('huc8-roaring-fork', { type: 'geojson', data: huc8 });
+      map.addLayer({
+        id: 'huc8-fill',
+        type: 'fill',
+        source: 'huc8-roaring-fork',
+        paint: {
+          'fill-color': '#1a5c8a',
+          'fill-opacity': 0.05
+        }
+      });
+      map.addLayer({
+        id: 'huc8-outline',
+        type: 'line',
+        source: 'huc8-roaring-fork',
+        paint: {
+          'line-color': '#1a5c8a',
+          'line-width': 1.5,
+          'line-dasharray': [4, 2]
+        }
+      });
 
-        // Cursor change on hover
-        map.on('mouseenter', 'org-fill', () => {
-          map.getCanvas().style.cursor = 'pointer';
-        });
-        map.on('mouseleave', 'org-fill', () => {
-          map.getCanvas().style.cursor = '';
-        });
+      // ---- Org boundaries (on top of all reference layers) ----
+      map.addSource('orgs', { type: 'geojson', data: orgs });
 
-        // Popup on click
-        map.on('click', 'org-fill', (e) => {
-          const props = e.features[0].properties;
-          const website = props.website
-            ? `<a class="popup-link" href="https://${props.website}" target="_blank" rel="noopener">Visit website →</a>`
-            : '';
+      map.addLayer({
+        id: 'org-fill',
+        type: 'fill',
+        source: 'orgs',
+        paint: {
+          'fill-color': '#2a7a4f',
+          'fill-opacity': 0.2
+        }
+      });
 
-          new maplibregl.Popup({ offset: 12, maxWidth: '280px' })
-            .setLngLat(e.lngLat)
-            .setHTML(`
-              <div class="popup-org-name">${props.org_name}</div>
-              <div class="popup-category">${props.category}</div>
-              <div class="popup-desc">Service area boundary. General perimeter.</div>
-              ${website}
-            `)
-            .addTo(map);
-        });
+      map.addLayer({
+        id: 'org-outline',
+        type: 'line',
+        source: 'orgs',
+        paint: {
+          'line-color': '#1a5c38',
+          'line-width': 2
+        }
+      });
 
-      })
-      .catch(err => console.error('Failed to load org GeoJSON:', err));
+      map.addLayer({
+        id: 'org-fill-hover',
+        type: 'fill',
+        source: 'orgs',
+        paint: {
+          'fill-color': '#2a7a4f',
+          'fill-opacity': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false],
+            0.4,
+            0
+          ]
+        }
+      });
+
+      // Cursor change on hover
+      map.on('mouseenter', 'org-fill', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'org-fill', () => {
+        map.getCanvas().style.cursor = '';
+      });
+
+      // Popup on click - org boundaries
+      map.on('click', 'org-fill', (e) => {
+        const props = e.features[0].properties;
+        const website = props.website
+          ? `<a class="popup-link" href="https://${props.website}" target="_blank" rel="noopener">Visit website →</a>`
+          : '';
+
+        new maplibregl.Popup({ offset: 12, maxWidth: '280px' })
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <div class="popup-org-name">${props.org_name}</div>
+            <div class="popup-category">${props.category}</div>
+            <div class="popup-desc">Service area boundary. General perimeter.</div>
+            ${website}
+          `)
+          .addTo(map);
+      });
+
+      // Popup on click - basin-scale reference layer (HUC-8 label)
+      map.on('click', 'huc8-fill', (e) => {
+        if (e.defaultPrevented) return;
+        const props = e.features[0].properties;
+        new maplibregl.Popup({ offset: 12, maxWidth: '260px' })
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <div class="popup-org-name">${props.name} watershed</div>
+            <div class="popup-desc">HUC-8 ${props.huc8} · ${Math.round(props.areasqkm).toLocaleString()} km²</div>
+          `)
+          .addTo(map);
+      });
+
+    }).catch(err => console.error('Failed to load map layers:', err));
   });
 </script>
 

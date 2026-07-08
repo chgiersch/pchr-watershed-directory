@@ -71,8 +71,26 @@ Every cleaned org file has the same five properties, so they merge cleanly later
 
 ## Reference layers (not org-specific)
 
+The map needs to work at three scales:
+
+1. **Local** - zoomed into the Roaring Fork/Pitkin County area, where most orgs sit.
+2. **Basin (CO)** - zoomed out to Colorado's portion of the Colorado River
+   watershed, for statewide orgs (Colorado River District, CWCB, Basin
+   Roundtable). This is the CO's West Slope HUC-8 set, clipped to the state
+   line - matches where these orgs actually operate.
+3. **Basin (context)** - a light outline-only layer for when someone zooms all
+   the way out, showing the full Upper Colorado Region (HUC-2 #14: CO, UT, WY,
+   NM down to Lake Powell/Glen Canyon Dam). No org data lives out here - it's
+   just geographic context so the CO orgs read as "part of a bigger river
+   system." Stops at Lake Powell; not extending into the Lower Basin (AZ/NV/CA).
+
 To be pulled into `data/reference/`:
-- HUC-8 watershed boundary (14010004 - Roaring Fork) from USGS WBD
+- Local scale: HUC-8 watershed boundary (14010004 - Roaring Fork) from USGS WBD
+- Basin (CO) scale: HUC-8 subwatersheds making up Colorado's West Slope/Colorado
+  River Basin in CO (headwaters, Eagle, Blue, Gunnison, Roaring Fork, etc.),
+  clipped to the CO state line - from USGS WBD
+- Basin (context) scale: Upper Colorado Region boundary (HUC-2 #14) from USGS
+  WBD, outline only, low opacity, no interactivity
 - Rivers/creeks from NHD
 - Roads, municipal/county boundaries from Pitkin County GIS (pending confirmation)
 - Hillshade/DEM (optional, for basemap)

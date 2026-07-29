@@ -174,5 +174,16 @@
     "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Straddles Eagle/Pitkin/Garfield county lines - included since RFWSD/MVMD both serve it.",
     "scope": "Municipal water system",
     "tier": "service_area"
+  },
+  {
+    "org_name": "Division of Water Resources (DWR)",
+    "org_short": "DWR",
+    "category": "Governance & Policy",
+    "website": "dwr.colorado.gov",
+    "boundary_id": "huc8_roaring_fork",
+    "category_confirmed": false,
+    "caveat": "Water District 38 covers the Roaring Fork watershed, administered by two water commissioners split near Emma - one covering Emma upstream (the Aspen and Basalt side), one covering Emma downstream (the Carbondale and El Jebel side, including the Crystal River). No official map of that split exists; DWR describes it narratively. Not drawn as polygons - see scripts/build_dwr_areas.py, which can reconstruct them from subwatersheds if ever needed. Commissioner names omitted pending confirmation from Gwen.",
+    "scope": "Roaring Fork watershed - Water District 38, split near Emma",
+    "tier": "watershed"
   }
 ]

@@ -172,6 +172,20 @@ Pitkin-County-only sliver) is migrated and explicitly marked `SUPERSEDED` in its
 kept for reference/comparison only, not used in the final map since `data/clean/wdwcd.geojson`
 now has the real full district boundary.
 
+**Interior-holes fix (7/29/26):** `co_west_slope_basin_dissolved.geojson`, and the duplicate copy of
+that same geometry inside `data/clean/boundaries.geojson` (`boundary_id: co_west_slope_basin`),
+each had 422 tiny interior holes (up to ~1.7 km², many far smaller) left over from an imperfect
+`unary_union` dissolve of the 30 HUC-8 subbasins that make up this layer - adjacent subwatersheds
+didn't perfectly seal along their shared edges. These rendered as small isolated navy-outlined gap
+shapes scattered across the basin, most visibly near Kremmling, and were initially mistaken for the
+same rendering bug as the `org-fill-hover` artifact above before being traced to actual geometry
+holes (confirmed by toggling layers and inspecting with `queryRenderedFeatures`, then visually
+confirmed against a Kremmling-area screenshot). Fixed in both files by keeping only each polygon's
+exterior ring (`Polygon(geom.exterior)`) and dropping all interior rings, since a real watershed
+boundary has no legitimate internal exclaves. `orgs_proof_of_concept.geojson` was regenerated from
+the fixed `boundaries.geojson` afterward. Verified live in-browser post-fix: no gap shapes remain
+around Kremmling or anywhere else in the basin at a range of zoom levels.
+
 **Rivers (added 7/29/26):** `data/reference/nhd_rivers.geojson` - 12 named main-stem rivers and
 tributaries (Roaring Fork, Crystal, Fryingpan, Colorado rivers plus
 Snowmass/Capitol/Castle/Maroon/Woody/Brush/Cattle/West Divide creeks - the set tied to this

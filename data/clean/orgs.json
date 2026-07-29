@@ -1,0 +1,137 @@
+[
+  {
+    "org_name": "Snowmass Water and Sanitation District",
+    "org_short": "SWSD",
+    "category": "Water Providers",
+    "website": "swsd.org",
+    "boundary_id": "swsd_boundary",
+    "category_confirmed": true,
+    "caveat": "Service area boundary, general perimeter. Provided by Darrell Smith via Google Earth export, 6/24/26."
+  },
+  {
+    "org_name": "Basalt Water Conservancy District",
+    "org_short": "BWCD",
+    "category": "Water Providers",
+    "website": "bwcd.org",
+    "boundary_id": "bwcd_boundary",
+    "category_confirmed": true,
+    "caveat": "Service area boundary. Provided by Eric Mangeot (Sphero Environmental) via KML export, 7/9/26."
+  },
+  {
+    "org_name": "Roaring Fork Conservancy",
+    "org_short": "RFC",
+    "category": "Conservation & Advocacy",
+    "website": "roaringfork.org",
+    "boundary_id": "huc8_roaring_fork",
+    "category_confirmed": false,
+    "caveat": "No separate boundary file - operates across the whole Roaring Fork Watershed."
+  },
+  {
+    "org_name": "RWAPA",
+    "org_short": "RWAPA",
+    "category": "Governance & Policy",
+    "website": "",
+    "boundary_id": "huc8_roaring_fork",
+    "category_confirmed": false,
+    "caveat": "Confirmed by Gwen (7/2/26) as covering the whole Roaring Fork Watershed."
+  },
+  {
+    "org_name": "Pitkin County Healthy Rivers",
+    "org_short": "PCHR",
+    "category": "Governance & Policy",
+    "website": "",
+    "boundary_id": "huc8_roaring_fork",
+    "category_confirmed": false,
+    "caveat": "Per Tim Braun (Pitkin County), the HUC-8 boundary is the \"official\" Healthy Rivers boundary."
+  },
+  {
+    "org_name": "CVEPA (Crystal Valley Environmental Protection Association)",
+    "org_short": "CVEPA",
+    "category": "Conservation & Advocacy",
+    "website": "",
+    "boundary_id": "huc10_crystal_river",
+    "category_confirmed": true,
+    "caveat": "Confirmed by CVEPA via Gwen (7/28/26): service area is only the Crystal River Watershed."
+  },
+  {
+    "org_name": "Colorado Basin Roundtable",
+    "org_short": "CBRT",
+    "category": "Governance & Policy",
+    "website": "",
+    "boundary_id": "co_west_slope_basin",
+    "category_confirmed": false,
+    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in."
+  },
+  {
+    "org_name": "Colorado Water Conservation Board",
+    "org_short": "CWCB",
+    "category": "Governance & Policy",
+    "website": "",
+    "boundary_id": "co_west_slope_basin",
+    "category_confirmed": false,
+    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in."
+  },
+  {
+    "org_name": "Colorado River District",
+    "org_short": "CRD",
+    "category": "Governance & Policy",
+    "website": "",
+    "boundary_id": "co_west_slope_basin",
+    "category_confirmed": false,
+    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in."
+  },
+  {
+    "org_name": "Roaring Fork Water and Sanitation District",
+    "org_short": "RFWSD",
+    "category": "Water Providers",
+    "website": "rfwsd.com",
+    "boundary_id": "rfwsd_boundary",
+    "category_confirmed": true,
+    "caveat": "Real official boundary from Colorado DOLA, 7/28/26."
+  },
+  {
+    "org_name": "Mid Valley Metropolitan District",
+    "org_short": "MVMD",
+    "category": "Water Providers",
+    "website": "mvmdco.org",
+    "boundary_id": "mvmd_boundary",
+    "category_confirmed": true,
+    "caveat": "Real official boundary from Colorado DOLA, 7/28/26."
+  },
+  {
+    "org_name": "West Divide Water Conservancy District",
+    "org_short": "WDWCD",
+    "category": "Water Providers",
+    "website": "wdwcd.org",
+    "boundary_id": "wdwcd_boundary",
+    "category_confirmed": true,
+    "caveat": "Real official FULL district boundary from Colorado DOLA, 7/28/26 - replaces prior approximation."
+  },
+  {
+    "org_name": "Town of Carbondale",
+    "org_short": "CARBONDALE",
+    "category": "Governance & Policy",
+    "website": "carbondaleco.net",
+    "boundary_id": "carbondale_boundary",
+    "category_confirmed": true,
+    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Water supply: Crystal River."
+  },
+  {
+    "org_name": "City of Aspen",
+    "org_short": "ASPEN",
+    "category": "Governance & Policy",
+    "website": "aspen.gov",
+    "boundary_id": "aspen_boundary",
+    "category_confirmed": true,
+    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Water supply: Maroon & Castle Creeks."
+  },
+  {
+    "org_name": "City of Glenwood Springs",
+    "org_short": "GWS",
+    "category": "Governance & Policy",
+    "website": "glenwoodco.gov",
+    "boundary_id": "gws_boundary",
+    "category_confirmed": true,
+    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Water supply: Grizzly & No Name creeks, some Roaring Fork rights."
+  }
+]

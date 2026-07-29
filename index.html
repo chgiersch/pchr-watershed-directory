@@ -86,6 +86,12 @@
 
     .popup-link:hover { text-decoration: underline; }
 
+    .popup-org-block + .popup-org-block {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #e8e8e8;
+    }
+
     .map-note {
       font-size: 12px;
       color: #888;
@@ -105,7 +111,7 @@
 </header>
 
 <div id="map" role="region" aria-label="Roaring Fork Watershed map"></div>
-<div class="map-note">Prototype · SWSD boundary + Roaring Fork/Colorado River watershed reference layers · More organizations coming soon</div>
+<div class="map-note">Proof of concept · 15 organizations across 11 unique service-area boundaries · Roaring Fork/Colorado River watershed reference layers</div>
 
 <script>
   const map = new maplibregl.Map({
@@ -142,12 +148,26 @@
 
     const loadJSON = url => fetch(url).then(res => res.json());
 
+    // Normalized data model: boundaries.geojson holds one row per UNIQUE shape
+    // (keyed by boundary_id), orgs.json holds one row per org pointing at a
+    // boundary_id. Several orgs share a shape (e.g. RFC/RWAPA/PCHR all use the
+    // Roaring Fork HUC-8), so we draw each boundary once and join to orgs.json
+    // at click-time to list every org tied to that shape - see README
+    // "Boundaries vs. orgs (normalized structure)".
     Promise.all([
       loadJSON('data/reference/upper_colorado_region.geojson'),
       loadJSON('data/reference/co_west_slope_basin.geojson'),
       loadJSON('data/reference/huc8_roaring_fork.geojson'),
-      loadJSON('data/clean/swsd.geojson')
-    ]).then(([ucr, basin, huc8, orgs]) => {
+      loadJSON('data/clean/boundaries.geojson'),
+      loadJSON('data/clean/orgs.json')
+    ]).then(([ucr, basin, huc8, boundaries, orgs]) => {
+
+      // Group orgs by boundary_id for the click-time join.
+      const orgsByBoundary = new Map();
+      orgs.forEach(org => {
+        if (!orgsByBoundary.has(org.boundary_id)) orgsByBoundary.set(org.boundary_id, []);
+        orgsByBoundary.get(org.boundary_id).push(org);
+      });
 
       // ---- Upper Colorado Region (HUC-2) - light context outline, fades out on zoom in ----
       map.addSource('upper-colorado-region', { type: 'geojson', data: ucr });
@@ -209,13 +229,15 @@
         }
       });
 
-      // ---- Org boundaries (on top of all reference layers) ----
-      map.addSource('orgs', { type: 'geojson', data: orgs });
+      // ---- Org/boundary layer (on top of all reference layers) ----
+      // One feature per unique shape - orgs sharing a shape (RFC/RWAPA/PCHR,
+      // CBRT/CWCB/CRD) are joined in at click-time, not duplicated here.
+      map.addSource('boundaries', { type: 'geojson', data: boundaries });
 
       map.addLayer({
         id: 'org-fill',
         type: 'fill',
-        source: 'orgs',
+        source: 'boundaries',
         paint: {
           'fill-color': '#2a7a4f',
           'fill-opacity': 0.2
@@ -225,7 +247,7 @@
       map.addLayer({
         id: 'org-outline',
         type: 'line',
-        source: 'orgs',
+        source: 'boundaries',
         paint: {
           'line-color': '#1a5c38',
           'line-width': 2
@@ -235,7 +257,7 @@
       map.addLayer({
         id: 'org-fill-hover',
         type: 'fill',
-        source: 'orgs',
+        source: 'boundaries',
         paint: {
           'fill-color': '#2a7a4f',
           'fill-opacity': [
@@ -255,21 +277,30 @@
         map.getCanvas().style.cursor = '';
       });
 
-      // Popup on click - org boundaries
+      // Popup on click - org boundaries. A single shape can belong to more
+      // than one org (e.g. RFC/RWAPA/PCHR all use the Roaring Fork HUC-8), so
+      // list every org tied to this boundary_id.
       map.on('click', 'org-fill', (e) => {
-        const props = e.features[0].properties;
-        const website = props.website
-          ? `<a class="popup-link" href="https://${props.website}" target="_blank" rel="noopener">Visit website →</a>`
-          : '';
+        const boundaryId = e.features[0].properties.boundary_id;
+        const matchedOrgs = orgsByBoundary.get(boundaryId) || [];
+        if (matchedOrgs.length === 0) return;
 
-        new maplibregl.Popup({ offset: 12, maxWidth: '280px' })
+        const orgsHtml = matchedOrgs.map(org => {
+          const website = org.website
+            ? `<a class="popup-link" href="https://${org.website}" target="_blank" rel="noopener">Visit website →</a>`
+            : '';
+          return `
+            <div class="popup-org-block">
+              <div class="popup-org-name">${org.org_name}</div>
+              <div class="popup-category">${org.category}</div>
+              ${website}
+            </div>
+          `;
+        }).join('');
+
+        new maplibregl.Popup({ offset: 12, maxWidth: '300px' })
           .setLngLat(e.lngLat)
-          .setHTML(`
-            <div class="popup-org-name">${props.org_name}</div>
-            <div class="popup-category">${props.category}</div>
-            <div class="popup-desc">Service area boundary. General perimeter.</div>
-            ${website}
-          `)
+          .setHTML(orgsHtml)
           .addTo(map);
       });
 

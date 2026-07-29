@@ -170,3 +170,32 @@ instead, so this file isn't used in the final map. `wdwcd_pitkin_official.geojso
 Pitkin-County-only sliver) is migrated and explicitly marked `SUPERSEDED` in its `caveat` field -
 kept for reference/comparison only, not used in the final map since `data/clean/wdwcd.geojson`
 now has the real full district boundary.
+
+## Basemap
+
+`index.html` renders the basemap from a self-hosted [Protomaps](https://protomaps.com) PMTiles
+archive at `data/basemap/roaring-fork.pmtiles`, instead of hotlinking OpenStreetMap's raster tile
+server directly. Reasons: OSM's own tile usage policy asks production sites not to do that (they
+block heavy use without warning), and PMTiles is a single static file that serves for free from
+GitHub Pages alongside the rest of this repo - no tile server, no API key, no third-party account.
+The underlying data is still OpenStreetMap (ODbL - attribution required, already wired into the
+source's `attribution` field), Protomaps just repackages it into this format.
+
+**The archive isn't checked in yet - generate it once with:**
+
+```
+brew install pmtiles
+
+# Find today's build filename at https://maps.protomaps.com/builds/, then:
+pmtiles extract https://build.protomaps.com/YYYYMMDD.pmtiles data/basemap/roaring-fork.pmtiles \
+  --bbox=-108.6,38.6,-106.0,40.0 --maxzoom=13
+```
+
+The bbox covers West Divide's full district, the whole Roaring Fork valley, and Basalt, with a
+buffer for panning - deliberately tighter than the CO West Slope basin reference layer, since that
+one is just a low-opacity backdrop and doesn't need street-level tile detail. If the resulting file
+is close to GitHub's 100MB per-file limit, drop `--maxzoom` to 12.
+
+Until this file exists, the map will render with no basemap detail (blank background) - the org
+boundaries and reference layers still work fine since those load from this repo's own GeoJSON,
+independent of the basemap.

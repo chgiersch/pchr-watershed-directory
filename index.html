@@ -9,6 +9,14 @@
   <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 
+  <!-- PMTiles - reads the self-hosted basemap archive directly via HTTP range
+       requests, no tile server. Replaces raw OpenStreetMap raster tiles,
+       which OSM's own usage policy asks production sites not to hotlink. -->
+  <script src="https://unpkg.com/pmtiles@3/dist/pmtiles.js"></script>
+  <!-- Protomaps' basemap style generator - builds the full MapLibre layer
+       list (roads/water/buildings/labels) for a given color flavor. -->
+  <script src="https://unpkg.com/@protomaps/basemaps@5/dist/basemaps.js" crossorigin="anonymous"></script>
+
   <!-- Fonts matching pitkincountyrivers.com: Kameron (headings), Montserrat (body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -219,25 +227,34 @@
 <div class="map-note">Proof of concept · 16 organizations across 12 unique service-area boundaries · Roaring Fork/Colorado River watershed reference layers</div>
 
 <script>
+  // Register the pmtiles:// protocol once, before the map is created, so
+  // MapLibre can read tiles directly out of the single .pmtiles file via
+  // HTTP range requests - no tile server involved.
+  const pmtilesProtocol = new pmtiles.Protocol();
+  maplibregl.addProtocol('pmtiles', pmtilesProtocol.tile);
+
+  // Self-hosted Protomaps basemap, clipped to the Roaring Fork/West Divide
+  // area (see README "Basemap" section for the exact pmtiles extract command
+  // used to generate this file). Until data/basemap/roaring-fork.pmtiles
+  // exists, this source just renders blank - org/reference layers below are
+  // unaffected since those come from our own GeoJSON, not the basemap.
+  const BASEMAP_SOURCE = 'protomaps';
+  const BASEMAP_FLAVOR = 'grayscale'; // muted on purpose, so category-colored org fills stand out
+
   const map = new maplibregl.Map({
     container: 'map',
     style: {
       version: 8,
+      glyphs: 'https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf',
+      sprite: `https://protomaps.github.io/basemaps-assets/sprites/v4/${BASEMAP_FLAVOR}`,
       sources: {
-        'osm-tiles': {
-          type: 'raster',
-          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        [BASEMAP_SOURCE]: {
+          type: 'vector',
+          url: 'pmtiles://data/basemap/roaring-fork.pmtiles',
+          attribution: '<a href="https://protomaps.com">Protomaps</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }
       },
-      layers: [{
-        id: 'osm',
-        type: 'raster',
-        source: 'osm-tiles',
-        minzoom: 0,
-        maxzoom: 19
-      }]
+      layers: basemaps.layers(BASEMAP_SOURCE, basemaps.namedFlavor(BASEMAP_FLAVOR), { lang: 'en' })
     },
     center: [-106.95, 39.21],
     zoom: 12,

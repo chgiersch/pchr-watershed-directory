@@ -107,6 +107,24 @@
       box-shadow: 0 4px 16px rgba(0,0,0,0.15);
     }
 
+    /* MapLibre's default close button is a tiny, low-contrast target - make
+       it an easy-to-hit circle in the corner instead. */
+    .maplibregl-popup-close-button {
+      width: 26px;
+      height: 26px;
+      line-height: 26px;
+      font-size: 18px;
+      color: var(--navy);
+      right: 6px;
+      top: 6px;
+      border-radius: 50%;
+    }
+
+    .maplibregl-popup-close-button:hover {
+      background: #f0f4f6;
+      color: var(--navy);
+    }
+
     .popup-org-name {
       font-family: 'Kameron', serif;
       font-weight: 700;

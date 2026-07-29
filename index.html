@@ -252,7 +252,18 @@
   // find where roads/labels start in the stack later, and insert the org
   // fill layer just before them - keeping streets and place names fully
   // legible on top instead of getting tinted/obscured underneath our fill.
-  const basemapStyleLayers = basemaps.layers(BASEMAP_SOURCE, basemaps.namedFlavor(BASEMAP_FLAVOR), { lang: 'en' });
+  // Drop the basemap's own county/local admin boundary layer ('boundaries',
+  // kind_detail > 2 - the generic dashed lines for county-level divisions).
+  // In this region a lot of those boundaries run along rivers, so at low
+  // zoom they read as a dense scatter of dashes tracing every river - easily
+  // mistaken for a rendering bug in our own data, but it's just the basemap
+  // doing what it's designed to do. We already have our own meaningful
+  // reference layers (HUC-8, basin, org boundaries) for context, so generic
+  // county lines aren't adding value here - just noise. Keeping
+  // 'boundaries_country' (state/national lines - much sparser, still useful
+  // context at the zoomed-out view).
+  const basemapStyleLayers = basemaps.layers(BASEMAP_SOURCE, basemaps.namedFlavor(BASEMAP_FLAVOR), { lang: 'en' })
+    .filter(l => l.id !== 'boundaries');
 
   const map = new maplibregl.Map({
     container: 'map',

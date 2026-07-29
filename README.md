@@ -159,6 +159,7 @@ To be pulled into `data/reference/`:
 - Rivers/creeks from NHD
 - Roads, municipal/county boundaries from Pitkin County GIS (pending confirmation)
 - Hillshade/DEM (optional, for basemap)
+- Rivers/creeks from NHD - **done, see below**
 
 **Status (as of 7/28/26):** `huc8_roaring_fork.geojson`, `co_west_slope_basin.geojson` (+ its
 dissolved single-polygon version), `upper_colorado_region.geojson`, and `huc10_crystal_river.geojson`
@@ -171,6 +172,17 @@ Pitkin-County-only sliver) is migrated and explicitly marked `SUPERSEDED` in its
 kept for reference/comparison only, not used in the final map since `data/clean/wdwcd.geojson`
 now has the real full district boundary.
 
+**Rivers (added 7/29/26):** `data/reference/nhd_rivers.geojson` - 200 line features across 12
+named main-stem rivers and tributaries (Roaring Fork, Crystal, Fryingpan, Colorado rivers plus
+Snowmass/Capitol/Castle/Maroon/Woody/Brush/Cattle/West Divide creeks - the set tied to this
+project's orgs/caucuses), pulled from USGS NHD's small-scale flowline layer (already pre-generalized
+for exactly this kind of overview map, unlike the large-scale/high-resolution layer which is full of
+tiny unnamed segments). Geometry further simplified server-side (`maxAllowableOffset=300` meters)
+to keep the file small (158KB) - this is a deliberately curated subset, not the full named-stream
+network for the area (that's ~250 names in just this bbox, many outside the actual watershed).
+Rendered with sky-blue lines + italic labels, layered above the basemap's roads/labels (rivers
+should read clearly even where they cross a road) and above the org fill/outline.
+
 ## Basemap
 
 `index.html` renders the basemap from a self-hosted [Protomaps](https://protomaps.com) PMTiles
@@ -181,21 +193,80 @@ GitHub Pages alongside the rest of this repo - no tile server, no API key, no th
 The underlying data is still OpenStreetMap (ODbL - attribution required, already wired into the
 source's `attribution` field), Protomaps just repackages it into this format.
 
-**The archive isn't checked in yet - generate it once with:**
+**Generated 7/28/26** with:
 
 ```
 brew install pmtiles
 
 # Find today's build filename at https://maps.protomaps.com/builds/, then:
 pmtiles extract https://build.protomaps.com/YYYYMMDD.pmtiles data/basemap/roaring-fork.pmtiles \
-  --bbox=-108.6,38.6,-106.0,40.0 --maxzoom=13
+  --bbox=-108.6,38.6,-106.0,40.0 --maxzoom=15
 ```
 
 The bbox covers West Divide's full district, the whole Roaring Fork valley, and Basalt, with a
 buffer for panning - deliberately tighter than the CO West Slope basin reference layer, since that
-one is just a low-opacity backdrop and doesn't need street-level tile detail. If the resulting file
-is close to GitHub's 100MB per-file limit, drop `--maxzoom` to 12.
+one is just a low-opacity backdrop and doesn't need street-level tile detail. `--maxzoom=15` (the
+basemap's own max) gives full street/building detail in Aspen/Basalt/Carbondale/Glenwood Springs;
+the resulting file is ~88.5MB, under GitHub's 100MB per-file limit but past their 50MB warning
+threshold (harmless - the push still succeeds). Drop to `--maxzoom=14` or `13` if a future re-pull
+creeps over 100MB.
 
-Until this file exists, the map will render with no basemap detail (blank background) - the org
-boundaries and reference layers still work fine since those load from this repo's own GeoJSON,
+If this file doesn't exist yet, the map still renders fine - just with no basemap detail (blank
+background) - since org boundaries and reference layers load from this repo's own GeoJSON,
 independent of the basemap.
+
+### Initial view
+
+The map opens framed on the Roaring Fork HUC-8 watershed bounds (`bounds` option in the
+MapLibre constructor, computed from `data/reference/huc8_roaring_fork.geojson`'s own extent) rather
+than a fixed center/zoom - this is a watershed map first, org directory second, so it should open
+already showing the watershed.
+
+### Org fill/outline styling
+
+`org-fill` is intentionally low-opacity (0.15) and inserted *before* the basemap's roads/labels in
+the layer stack, so street detail and place names stay legible through the tint instead of getting
+washed out underneath it. `org-outline` stays on top of everything (thin lines don't obscure much).
+Where two boundaries share an edge (e.g. WDWCD's district line running along a municipal line), a
+`line-offset` on the outline nudges coincident lines apart so both colors show as parallel strips
+instead of one flatly covering the other - this isn't foolproof (offset direction depends on each
+source file's own vertex winding order, which we don't control), so some pairs may still overlap
+imperfectly. A more correct fix (real shared-edge detection via GeoPandas, styled as a proper
+double-line convention) is a planned post-launch polish item, not done yet.
+
+### Terrain relief (hillshade)
+
+`index.html` wires up a `raster-dem` source + `hillshade` layer pointing at
+`data/basemap/roaring-fork-terrain.pmtiles`, from [Mapterhorn](https://mapterhorn.com)'s free,
+Terrarium-encoded elevation PMTiles (BSD-3 licensed, Copernicus DEM at 30m resolution for this
+area). **Generated 7/29/26** with:
+
+```
+pmtiles extract https://download.mapterhorn.com/planet.pmtiles data/basemap/roaring-fork-terrain.pmtiles \
+  --bbox=-108.6,38.6,-106.0,40.0 --maxzoom=10
+```
+
+First attempt used `--maxzoom=11` and came out to 103MB - just over GitHub's 100MB cap. Dropping to
+`--maxzoom=10` (hillshade doesn't need street-level zoom to look good) brought it down to ~39.5MB,
+comfortably under the limit. This is a separate file from the main basemap's ~88.5MB, so it has its
+own independent 100MB budget and doesn't compete with it.
+
+### Local testing note: use RangeHTTPServer, not plain `http.server`
+
+PMTiles reads the archive via HTTP byte-range requests, and Python's built-in
+`python3 -m http.server` has unreliable Range support - it can silently ignore `Range` headers and
+return the *entire* file instead of the requested slice (confirmed 7/28/26: it failed this way for
+every file on the server, not just the large pmtiles one, so it's not about file size). The pmtiles
+JS library detects this and throws `"Server returned no content-length header or content-length
+exceeding request"` rather than silently corrupting itself - if you see that error locally, this is
+why.
+
+Use this instead when testing locally:
+
+```
+python3 -m pip install RangeHTTPServer --break-system-packages
+python3 -m RangeHTTPServer 8000
+```
+
+This is purely a local dev server limitation - GitHub Pages' own servers handle Range requests
+correctly, so the deployed site isn't affected.

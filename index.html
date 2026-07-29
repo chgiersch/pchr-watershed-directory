@@ -241,6 +241,19 @@
   const BASEMAP_SOURCE = 'protomaps';
   const BASEMAP_FLAVOR = 'grayscale'; // muted on purpose, so category-colored org fills stand out
 
+  // The pmtiles:// protocol needs a fully-qualified URL after it (every
+  // Protomaps example shows "pmtiles://https://example.com/x.pmtiles") - a
+  // bare relative path fails to parse and the source silently renders
+  // nothing. Resolving against location.href here means this works
+  // unchanged on localhost AND once deployed under a GitHub Pages subpath.
+  const basemapUrl = new URL('data/basemap/roaring-fork.pmtiles', window.location.href).href;
+
+  // Captured separately (not just inlined into the style below) so we can
+  // find where roads/labels start in the stack later, and insert the org
+  // fill layer just before them - keeping streets and place names fully
+  // legible on top instead of getting tinted/obscured underneath our fill.
+  const basemapStyleLayers = basemaps.layers(BASEMAP_SOURCE, basemaps.namedFlavor(BASEMAP_FLAVOR), { lang: 'en' });
+
   const map = new maplibregl.Map({
     container: 'map',
     style: {
@@ -250,15 +263,30 @@
       sources: {
         [BASEMAP_SOURCE]: {
           type: 'vector',
-          url: 'pmtiles://data/basemap/roaring-fork.pmtiles',
+          url: `pmtiles://${basemapUrl}`,
           attribution: '<a href="https://protomaps.com">Protomaps</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }
       },
-      layers: basemaps.layers(BASEMAP_SOURCE, basemaps.namedFlavor(BASEMAP_FLAVOR), { lang: 'en' })
+      layers: basemapStyleLayers
     },
-    center: [-106.95, 39.21],
-    zoom: 12,
+    // Initial view fits the Roaring Fork HUC-8 watershed bounds (computed
+    // from data/reference/huc8_roaring_fork.geojson) instead of a fixed
+    // center/zoom, so the map opens already framed on the actual watershed
+    // rather than an arbitrary point - matches this being a watershed map
+    // first, org directory second.
+    bounds: [
+      [-107.46575, 38.97765], // southwest
+      [-106.48108, 39.56394]  // northeast
+    ],
+    fitBoundsOptions: { padding: 20 },
     attributionControl: true
+  });
+
+  // Temporary diagnostic logging - surfaces any style/source error to the
+  // console immediately, since MapLibre can fire 'error' synchronously
+  // during style validation, before any later-attached listener could catch it.
+  map.on('error', (e) => {
+    console.error('MAPLIBRE ERROR:', e.error ? (e.error.message || e.error) : e, e);
   });
 
   // Navigation controls
@@ -267,6 +295,33 @@
   // Load reference layers + org boundaries together, so we can control stacking order
   // regardless of which fetch finishes first.
   map.on('load', () => {
+
+    // ---- Terrain relief (hillshade) ----
+    // Mapterhorn's free Terrarium-encoded elevation PMTiles, extracted the
+    // same way as the main basemap (see README "Terrain relief"). Inserted
+    // before the basemap's own first layer so it sits at the very bottom of
+    // the stack - underneath water/roads/labels, just adding a sense of
+    // mountainous relief behind everything else. This file doesn't exist
+    // until generated (a separate pull from the main basemap) - until then
+    // this source just has nothing to draw and the map looks the same as
+    // before, same as how the main basemap behaved before it existed.
+    const terrainUrl = new URL('data/basemap/roaring-fork-terrain.pmtiles', window.location.href).href;
+    map.addSource('terrain-dem', {
+      type: 'raster-dem',
+      url: `pmtiles://${terrainUrl}`,
+      encoding: 'terrarium',
+      tileSize: 256
+    });
+    map.addLayer({
+      id: 'hillshade',
+      type: 'hillshade',
+      source: 'terrain-dem',
+      paint: {
+        'hillshade-shadow-color': '#5b5b5b',
+        'hillshade-highlight-color': '#ffffff',
+        'hillshade-exaggeration': 0.45
+      }
+    }, basemapStyleLayers.length ? basemapStyleLayers[0].id : undefined);
 
     const loadJSON = url => fetch(url).then(res => res.json());
 
@@ -280,9 +335,10 @@
       loadJSON('data/reference/upper_colorado_region.geojson'),
       loadJSON('data/reference/co_west_slope_basin.geojson'),
       loadJSON('data/reference/huc8_roaring_fork.geojson'),
+      loadJSON('data/reference/nhd_rivers.geojson'),
       loadJSON('data/clean/boundaries.geojson'),
       loadJSON('data/clean/orgs.json')
-    ]).then(([ucr, basin, huc8, boundaries, orgs]) => {
+    ]).then(([ucr, basin, huc8, rivers, boundaries, orgs]) => {
 
       // Group orgs by boundary_id for the click-time join.
       const orgsByBoundary = new Map();
@@ -397,12 +453,57 @@
         }
       });
 
-      // ---- Org/boundary layer (on top of all reference layers) ----
+      // ---- Named rivers/streams (NHD) - watershed context ----
+      // Curated set of 12 main-stem rivers + tributaries tied to this
+      // project's orgs/caucuses (see data/reference/nhd_rivers.geojson's own
+      // caveat field) - not the full NHD network, which runs into the
+      // hundreds of minor named/unnamed streams in this area.
+      map.addSource('nhd-rivers', { type: 'geojson', data: rivers });
+      map.addLayer({
+        id: 'rivers-line',
+        type: 'line',
+        source: 'nhd-rivers',
+        paint: {
+          'line-color': rootStyle.getPropertyValue('--sky').trim(),
+          'line-width': 1.2,
+          'line-opacity': 0.85
+        }
+      });
+      map.addLayer({
+        id: 'rivers-label',
+        type: 'symbol',
+        source: 'nhd-rivers',
+        layout: {
+          'symbol-placement': 'line',
+          'text-field': ['get', 'name'],
+          'text-font': ['Noto Sans Italic'],
+          'text-size': 11,
+          'text-letter-spacing': 0.02
+        },
+        paint: {
+          'text-color': rootStyle.getPropertyValue('--sky').trim(),
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 1.5
+        }
+      });
+
+      // ---- Org/boundary layer ----
       // One feature per unique shape - orgs sharing a shape (RFC/RWAPA/PCHR,
       // CBRT/CWCB/CRD) are joined in at click-time, not duplicated here.
       // Fill/outline color comes from the _categoryColor tagged onto each
       // feature above, so the map reads as a category legend at a glance.
       map.addSource('boundaries', { type: 'geojson', data: boundaries });
+
+      // The fill (and its hover variant) go IN FRONT of the basemap's water/
+      // landcover/building fills, but BEHIND its roads and labels - inserted
+      // right before the basemap's first line-type layer. Without this,
+      // addLayer() would stack them on top of literally everything,
+      // including road lines and place-name text, making the whole basemap
+      // hard to read through a tinted overlay. The category-colored outline
+      // stays on top (added last, no beforeId) since a thin line doesn't
+      // meaningfully obscure anything underneath it.
+      const firstRoadLayer = basemapStyleLayers.find(l => l.type === 'line');
+      const beforeRoads = firstRoadLayer ? firstRoadLayer.id : undefined;
 
       map.addLayer({
         id: 'org-fill',
@@ -410,19 +511,9 @@
         source: 'boundaries',
         paint: {
           'fill-color': ['get', '_categoryColor'],
-          'fill-opacity': 0.25
+          'fill-opacity': 0.15
         }
-      });
-
-      map.addLayer({
-        id: 'org-outline',
-        type: 'line',
-        source: 'boundaries',
-        paint: {
-          'line-color': ['get', '_categoryColor'],
-          'line-width': 2
-        }
-      });
+      }, beforeRoads);
 
       map.addLayer({
         id: 'org-fill-hover',
@@ -436,6 +527,27 @@
             0.45,
             0
           ]
+        }
+      }, beforeRoads);
+
+      // Trying line-offset first for coincident boundaries (e.g. WDWCD's
+      // district line running along a municipal line) - nudges each line a
+      // couple px to one side so two overlapping boundaries can show as two
+      // parallel strips instead of one fully covering the other. Caveat:
+      // offset direction depends on each polygon's vertex winding order,
+      // which comes from whatever source each file was pulled from (Pitkin
+      // GIS/DOLA/BLM/USGS) - not something we control per-feature. This may
+      // not resolve every overlapping pair consistently; if it looks worse
+      // in places or inconsistent, the fallback is a semi-transparent
+      // 'line-opacity' blend instead (see README/chat notes).
+      map.addLayer({
+        id: 'org-outline',
+        type: 'line',
+        source: 'boundaries',
+        paint: {
+          'line-color': ['get', '_categoryColor'],
+          'line-width': 1.5,
+          'line-offset': 1.5
         }
       });
 

@@ -160,6 +160,21 @@
       border-top: 1px solid #e8e8e8;
     }
 
+    .popup-context-block {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--sky);
+    }
+
+    .popup-context-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--sky);
+      margin-bottom: 3px;
+    }
+
     .map-note {
       font-size: 12px;
       color: #666;
@@ -387,27 +402,35 @@
         }
       });
 
-      // Cursor change on hover
-      map.on('mouseenter', 'org-fill', () => {
-        map.getCanvas().style.cursor = 'pointer';
-      });
-      map.on('mouseleave', 'org-fill', () => {
-        map.getCanvas().style.cursor = '';
+      // Cursor change on hover - org boundaries and the HUC-8 reference layer
+      // are both clickable, so show the pointer over either.
+      const interactiveLayers = ['org-fill', 'huc8-fill'];
+      interactiveLayers.forEach(layerId => {
+        map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = ''; });
       });
 
-      // Popup on click - org boundaries. A single shape can belong to more
-      // than one org (e.g. RFC/RWAPA/PCHR all use the Roaring Fork HUC-8), so
-      // list every org tied to this boundary_id.
-      map.on('click', 'org-fill', (e) => {
-        // org-fill sits on top of huc8-fill/basin-fill - stop the click from
-        // also opening the underlying reference-layer popup (e.g. clicking
-        // Colorado Basin Roundtable/CWCB inside the CO West Slope basin was
-        // popping open a second "Roaring Fork watershed" popup underneath).
-        e.preventDefault();
+      // Single click handler queries every interactive layer at the clicked
+      // point, so overlapping shapes all show up in one popup instead of
+      // just whichever layer happens to be on top - e.g. WDWCD's district
+      // covers several municipalities, and org boundaries generally sit
+      // inside the Roaring Fork HUC-8 reference layer.
+      map.on('click', (e) => {
+        const hits = map.queryRenderedFeatures(e.point, { layers: interactiveLayers });
+        if (hits.length === 0) return;
 
-        const boundaryId = e.features[0].properties.boundary_id;
-        const matchedOrgs = orgsByBoundary.get(boundaryId) || [];
-        if (matchedOrgs.length === 0) return;
+        // Org boundaries: collect every unique boundary_id hit at this point,
+        // then join to every org tied to each one (a single boundary can
+        // itself hold multiple orgs, e.g. RFC/RWAPA/PCHR on the HUC-8).
+        const boundaryIds = new Set(
+          hits.filter(f => f.layer.id === 'org-fill').map(f => f.properties.boundary_id)
+        );
+        const matchedOrgs = Array.from(boundaryIds).flatMap(id => orgsByBoundary.get(id) || []);
+
+        // Watershed reference layer hit at the same point, if any.
+        const huc8Hit = hits.find(f => f.layer.id === 'huc8-fill');
+
+        if (matchedOrgs.length === 0 && !huc8Hit) return;
 
         const orgsHtml = matchedOrgs.map(org => {
           const website = org.website
@@ -425,22 +448,17 @@
           `;
         }).join('');
 
+        const huc8Html = huc8Hit ? `
+          <div class="popup-context-block">
+            <div class="popup-context-label">Watershed</div>
+            <div class="popup-org-name">${huc8Hit.properties.name} watershed</div>
+            <div class="popup-desc">HUC-8 ${huc8Hit.properties.huc8} · ${Math.round(huc8Hit.properties.areasqkm).toLocaleString()} km²</div>
+          </div>
+        ` : '';
+
         new maplibregl.Popup({ offset: 12, maxWidth: '300px' })
           .setLngLat(e.lngLat)
-          .setHTML(orgsHtml)
-          .addTo(map);
-      });
-
-      // Popup on click - basin-scale reference layer (HUC-8 label)
-      map.on('click', 'huc8-fill', (e) => {
-        if (e.defaultPrevented) return;
-        const props = e.features[0].properties;
-        new maplibregl.Popup({ offset: 12, maxWidth: '260px' })
-          .setLngLat(e.lngLat)
-          .setHTML(`
-            <div class="popup-org-name">${props.name} watershed</div>
-            <div class="popup-desc">HUC-8 ${props.huc8} · ${Math.round(props.areasqkm).toLocaleString()} km²</div>
-          `)
+          .setHTML(orgsHtml + huc8Html)
           .addTo(map);
       });
 

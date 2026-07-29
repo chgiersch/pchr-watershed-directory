@@ -133,5 +133,14 @@
     "boundary_id": "gws_boundary",
     "category_confirmed": true,
     "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Water supply: Grizzly & No Name creeks, some Roaring Fork rights."
+  },
+  {
+    "org_name": "Town of Basalt",
+    "org_short": "BASALT",
+    "category": "Governance & Policy",
+    "website": "basalt.net",
+    "boundary_id": "basalt_boundary",
+    "category_confirmed": true,
+    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Straddles Eagle/Pitkin/Garfield county lines - included since RFWSD/MVMD both serve it."
   }
 ]

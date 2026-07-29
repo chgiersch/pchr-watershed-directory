@@ -399,6 +399,12 @@
       // than one org (e.g. RFC/RWAPA/PCHR all use the Roaring Fork HUC-8), so
       // list every org tied to this boundary_id.
       map.on('click', 'org-fill', (e) => {
+        // org-fill sits on top of huc8-fill/basin-fill - stop the click from
+        // also opening the underlying reference-layer popup (e.g. clicking
+        // Colorado Basin Roundtable/CWCB inside the CO West Slope basin was
+        // popping open a second "Roaring Fork watershed" popup underneath).
+        e.preventDefault();
+
         const boundaryId = e.features[0].properties.boundary_id;
         const matchedOrgs = orgsByBoundary.get(boundaryId) || [];
         if (matchedOrgs.length === 0) return;

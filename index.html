@@ -327,9 +327,32 @@
   // Order). Focus returns to the map canvas on close so the keyboard user
   // isn't dumped back at the top of the document.
   let activePopup = null;
+  // Assigned once the selection machinery exists inside the data-load block -
+  // openPopup is defined out here so both the click and keyboard paths can
+  // share it, which puts it out of scope for clearSelection.
+  let onPopupClosed = null;
+
+  // True while one popup is being swapped for another. Replacing a popup fires
+  // the outgoing one's 'close' event, which would otherwise run the close hook
+  // and wipe the selection the new click just made - the symptom being that
+  // clicking straight from one town to another left nothing highlighted, and
+  // you had to click empty ground in between. Closing is only a real close
+  // when it isn't a replacement.
+  let replacingPopup = false;
+
   function openPopup(lngLat, html) {
-    if (activePopup) activePopup.remove();
-    activePopup = new maplibregl.Popup({ offset: 12, maxWidth: '420px' })
+    if (activePopup) {
+      replacingPopup = true;
+      activePopup.remove();
+      replacingPopup = false;
+    }
+    activePopup = new maplibregl.Popup({
+      offset: 12,
+      maxWidth: '420px',
+      // The click handler owns the popup lifecycle. Left at the default true,
+      // MapLibre closes the popup on any map click, racing our own handler.
+      closeOnClick: false
+    })
       .setLngLat(lngLat)
       .setHTML(html)
       .addTo(map);
@@ -343,10 +366,30 @@
       content.focus({ preventScroll: true });
     }
     activePopup.on('close', () => {
+      if (replacingPopup) return;   // being swapped, not dismissed
       activePopup = null;
+      if (onPopupClosed) onPopupClosed();
       map.getCanvas().focus({ preventScroll: true });
     });
     return activePopup;
+
+  }
+
+  // Dismiss for real - close button, Escape, or a click outside the watershed.
+  function closePopup() {
+    if (activePopup) activePopup.remove();   // fires the hook above
+  }
+
+  // Take the popup down without treating it as a dismissal, so the close hook
+  // doesn't clear a selection that's moving somewhere else. Used when the
+  // keyboard cursor steps to a new shape: leaving the old popup open would
+  // show one org while a different one is highlighted.
+  function dismissPopupQuietly() {
+    if (!activePopup) return;
+    replacingPopup = true;
+    activePopup.remove();
+    replacingPopup = false;
+    activePopup = null;   // the early-returning close handler skips this
   }
 
   // Frame the watershed and make that the furthest you can zoom out.
@@ -621,10 +664,20 @@
       const firstRoadLayer = basemapStyleLayers.find(l => l.type === 'line');
       const beforeRoads = firstRoadLayer ? firstRoadLayer.id : undefined;
 
+      // Smallest shapes draw last, so they sit on top. Within one fill layer
+      // MapLibre paints features in source order, which put BWCD's 2,919 km²
+      // over the 5 km² towns inside it - they were tinted by it, hard to pick
+      // out when highlighted, and returned second by queryRenderedFeatures.
+      // Negating the area inverts the order: BWCD sorts to -2919 (bottom),
+      // Carbondale to -5 (top). Applied to fill, outline and highlight so all
+      // three stay consistent.
+      const smallestOnTop = ['-', 0, ['get', 'areasqkm']];
+
       map.addLayer({
         id: 'org-fill',
         type: 'fill',
         source: 'boundaries',
+        layout: { 'fill-sort-key': smallestOnTop },
         paint: {
           'fill-color': ['get', '_color'],
           // Bumped from 0.15 now that there's no giant basin polygon stacking
@@ -655,6 +708,7 @@
         id: 'org-outline',
         type: 'line',
         source: 'boundaries',
+        layout: { 'line-sort-key': smallestOnTop },
         paint: {
           'line-color': ['get', '_color'],
           'line-width': 1.5,
@@ -724,6 +778,52 @@
         map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = ''; });
       });
 
+      // ---- Selection highlight ----
+      // A dedicated line layer for the selected shape, plus a fill-opacity
+      // expression that lifts the selection and drops everything else. Doing
+      // it with a separate layer rather than only bumping opacity means the
+      // emphasized outline can be thicker and un-offset - the normal outline
+      // carries line-offset to separate coincident boundaries, which looks
+      // wrong when a shape is meant to read as picked out.
+      const BASE_FILL = 0.22;
+      const SELECTED_FILL = 0.5;
+      const MUTED_FILL = 0.1;
+
+      // Inserted before 'org-label' so the thick highlight line never draws
+      // over a shape's own name - the label is what tells you what you picked.
+      map.addLayer({
+        id: 'org-selected',
+        type: 'line',
+        source: 'boundaries',
+        filter: ['==', ['get', 'boundary_id'], '__none__'],
+        layout: { 'line-sort-key': smallestOnTop },
+        paint: {
+          'line-color': ['get', '_color'],
+          'line-width': 3.5
+        }
+      }, 'org-label');
+
+      let selectedIds = [];
+
+      function setSelection(ids) {
+        selectedIds = ids;
+        if (!ids.length) {
+          map.setPaintProperty('org-fill', 'fill-opacity', BASE_FILL);
+          map.setFilter('org-selected', ['==', ['get', 'boundary_id'], '__none__']);
+          return;
+        }
+        const isSelected = ['in', ['get', 'boundary_id'], ['literal', ids]];
+        map.setPaintProperty('org-fill', 'fill-opacity',
+          ['case', isSelected, SELECTED_FILL, MUTED_FILL]);
+        map.setFilter('org-selected', isSelected);
+      }
+
+      const clearSelection = () => setSelection([]);
+
+      // Closing the popup drops the highlight - a shape left emphasized with
+      // nothing open reads as a stuck state.
+      onPopupClosed = clearSelection;
+
       // ---- Popup content builders ----
       // Shared by the click handler and the keyboard handler, so they have to
       // live out here - they were originally inside the click callback, which
@@ -771,7 +871,13 @@
       // inside the Roaring Fork HUC-8 reference layer.
       map.on('click', (e) => {
         const hits = map.queryRenderedFeatures(e.point, { layers: interactiveLayers });
-        if (hits.length === 0) return;
+
+        // Nothing under the cursor at all - outside the watershed entirely.
+        // With closeOnClick off, dismissing is now our job.
+        if (hits.length === 0) {
+          closePopup();
+          return;
+        }
 
         // Every boundary hit at this point, keyed by boundary_id, then joined
         // to the org(s) tied to each - a single shape can carry several orgs
@@ -783,7 +889,10 @@
         // Only respond to clicks inside the watershed - outside it there's
         // nothing to say, and the mask already signals that it's out of scope.
         const insideWatershed = hits.some(f => f.layer.id === 'watershed-highlight');
-        if (!insideWatershed) return;
+        if (!insideWatershed) {
+          closePopup();
+          return;
+        }
 
         // The popup reads outward from where you clicked. Whichever service
         // areas cover this exact point come first and change as you move
@@ -791,8 +900,13 @@
         // sit underneath as standing context rather than repeating as if they
         // were a discovery. Answers both "who's specifically here" and "who
         // covers all of this" in one place.
-        const localOrgs = Array.from(hitBoundaries.keys())
-          .flatMap(id => orgsByBoundary.get(id) || []);
+        // Smallest area first, so the list reads from most specific to least:
+        // Carbondale (5 km²) above West Divide (538) above BWCD (2,919). The
+        // small shape is almost always the one you meant to click - the big
+        // ones are the context you happen to also be sitting in.
+        const localOrgs = Array.from(hitBoundaries.entries())
+          .sort((a, b) => a[1].areasqkm - b[1].areasqkm)
+          .flatMap(([id]) => orgsByBoundary.get(id) || []);
 
         // Crystal River is a named sub-watershed rather than a service area,
         // so it gets its HUC code and area alongside the org listing.
@@ -802,6 +916,13 @@
             HUC ${crystal.huc_code} · ${Math.round(crystal.areasqkm).toLocaleString()} km²
           </div>
         ` : '';
+
+        // Highlight the most specific shape under the cursor - the smallest.
+        // Highlighting all of them would just re-emphasize the big background
+        // polygons, which is the opposite of useful.
+        const smallest = Array.from(hitBoundaries.entries())
+          .sort((a, b) => a[1].areasqkm - b[1].areasqkm)[0];
+        setSelection(smallest ? [smallest[0]] : []);
 
         openPopup(e.lngLat, buildPopupHtml(localOrgs, crystalHtml));
       });
@@ -822,6 +943,7 @@
         .sort((a, b) => a.properties.label.localeCompare(b.properties.label));
 
       function selectByIndex(i) {
+        dismissPopupQuietly();
         cursorIndex = (i + focusOrder.length) % focusOrder.length;
         const f = focusOrder[cursorIndex];
         const p = f.properties;
@@ -830,9 +952,7 @@
           center: [p.label_lon, p.label_lat],
           duration: prefersReducedMotion() ? 0 : 500
         });
-        map.setPaintProperty('org-fill', 'fill-opacity', [
-          'case', ['==', ['get', 'boundary_id'], p.boundary_id], 0.5, 0.22
-        ]);
+        setSelection([p.boundary_id]);
       }
 
       function openForCursor() {
@@ -855,8 +975,8 @@
         else if (ev.key === '[') { ev.preventDefault(); selectByIndex(cursorIndex - 1); }
         else if (ev.key === 'Enter') { ev.preventDefault(); openForCursor(); }
         else if (ev.key === 'Escape') {
-          if (activePopup) activePopup.remove();
-          map.setPaintProperty('org-fill', 'fill-opacity', 0.22);
+          closePopup();          // clears the selection via the close hook
+          clearSelection();      // also covers the case where none was open
           cursorIndex = -1;
           announce('Selection cleared.');
         }

@@ -344,7 +344,7 @@
     // "Boundaries vs. orgs (normalized structure)".
     Promise.all([
       loadJSON('data/reference/upper_colorado_region.geojson'),
-      loadJSON('data/reference/co_west_slope_basin.geojson'),
+      loadJSON('data/reference/co_west_slope_basin_dissolved.geojson'),
       loadJSON('data/reference/huc8_roaring_fork.geojson'),
       loadJSON('data/reference/nhd_rivers.geojson'),
       loadJSON('data/clean/boundaries.geojson'),
@@ -468,7 +468,9 @@
       // Curated set of 12 main-stem rivers + tributaries tied to this
       // project's orgs/caucuses (see data/reference/nhd_rivers.geojson's own
       // caveat field) - not the full NHD network, which runs into the
-      // hundreds of minor named/unnamed streams in this area.
+      // hundreds of minor named/unnamed streams in this area. (Briefly
+      // disabled 7/29/26 while tracking down a scattered-marks rendering bug
+      // - turned out to be the unrelated 'org-fill-hover' layer, not this.)
       map.addSource('nhd-rivers', { type: 'geojson', data: rivers });
       map.addLayer({
         id: 'rivers-line',
@@ -505,14 +507,14 @@
       // feature above, so the map reads as a category legend at a glance.
       map.addSource('boundaries', { type: 'geojson', data: boundaries });
 
-      // The fill (and its hover variant) go IN FRONT of the basemap's water/
-      // landcover/building fills, but BEHIND its roads and labels - inserted
-      // right before the basemap's first line-type layer. Without this,
-      // addLayer() would stack them on top of literally everything,
-      // including road lines and place-name text, making the whole basemap
-      // hard to read through a tinted overlay. The category-colored outline
-      // stays on top (added last, no beforeId) since a thin line doesn't
-      // meaningfully obscure anything underneath it.
+      // The fill goes IN FRONT of the basemap's water/landcover/building
+      // fills, but BEHIND its roads and labels - inserted right before the
+      // basemap's first line-type layer. Without this, addLayer() would
+      // stack it on top of literally everything, including road lines and
+      // place-name text, making the whole basemap hard to read through a
+      // tinted overlay. The category-colored outline stays on top (added
+      // last, no beforeId) since a thin line doesn't meaningfully obscure
+      // anything underneath it.
       const firstRoadLayer = basemapStyleLayers.find(l => l.type === 'line');
       const beforeRoads = firstRoadLayer ? firstRoadLayer.id : undefined;
 
@@ -526,20 +528,19 @@
         }
       }, beforeRoads);
 
-      map.addLayer({
-        id: 'org-fill-hover',
-        type: 'fill',
-        source: 'boundaries',
-        paint: {
-          'fill-color': ['get', '_categoryColor'],
-          'fill-opacity': [
-            'case',
-            ['boolean', ['feature-state', 'hover'], false],
-            0.45,
-            0
-          ]
-        }
-      }, beforeRoads);
+      // NOTE: a separate 'org-fill-hover' layer (opacity driven by
+      // feature-state 'hover', meant to highlight a boundary on mouseover)
+      // was removed 7/29/26 - it was never actually wired up (no
+      // setFeatureState call anywhere sets hover:true, so it should have
+      // been permanently invisible), but its zero-opacity fill was still
+      // producing faint rendering seams at complex polygon vertices - a
+      // WebGL tessellation artifact that showed up as small scattered marks
+      // across the map, worst on complex many-vertex shapes like the CO West
+      // Slope basin and WDWCD. Since the hover effect was never functional
+      // anyway, simplest fix was to remove the layer rather than debug the
+      // artifact. If hover highlighting is wanted later, re-add this layer
+      // AND wire up the mousemove handler that actually sets the feature
+      // state - don't just re-add the layer alone.
 
       // Trying line-offset first for coincident boundaries (e.g. WDWCD's
       // district line running along a municipal line) - nudges each line a

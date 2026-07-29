@@ -172,14 +172,17 @@ Pitkin-County-only sliver) is migrated and explicitly marked `SUPERSEDED` in its
 kept for reference/comparison only, not used in the final map since `data/clean/wdwcd.geojson`
 now has the real full district boundary.
 
-**Rivers (added 7/29/26):** `data/reference/nhd_rivers.geojson` - 200 line features across 12
-named main-stem rivers and tributaries (Roaring Fork, Crystal, Fryingpan, Colorado rivers plus
+**Rivers (added 7/29/26):** `data/reference/nhd_rivers.geojson` - 12 named main-stem rivers and
+tributaries (Roaring Fork, Crystal, Fryingpan, Colorado rivers plus
 Snowmass/Capitol/Castle/Maroon/Woody/Brush/Cattle/West Divide creeks - the set tied to this
 project's orgs/caucuses), pulled from USGS NHD's small-scale flowline layer (already pre-generalized
 for exactly this kind of overview map, unlike the large-scale/high-resolution layer which is full of
-tiny unnamed segments). Geometry further simplified server-side (`maxAllowableOffset=300` meters)
-to keep the file small (158KB) - this is a deliberately curated subset, not the full named-stream
-network for the area (that's ~250 names in just this bbox, many outside the actual watershed).
+tiny unnamed segments). Geometry further simplified server-side (`maxAllowableOffset=300` meters).
+This is a deliberately curated subset, not the full named-stream network for the area (that's ~250
+names in just this bbox, many outside the actual watershed). **One feature per river** (12 total,
+20KB) - NHD initially returns each river as dozens of separate short reach segments (Roaring Fork
+alone was 49), which rendered as fragmented-looking dashes with a repeated label on every segment;
+merged via `shapely.ops.linemerge` into one continuous line per river before saving.
 Rendered with sky-blue lines + italic labels, layered above the basemap's roads/labels (rivers
 should read clearly even where they cross a road) and above the org fill/outline.
 

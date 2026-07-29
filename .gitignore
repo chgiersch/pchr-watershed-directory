@@ -1,3 +1,9 @@
+# Scratch space. Anything that isn't part of the final map or webpage lives
+# here and stays out of git - meeting prep, one-off review exports, throwaway
+# analysis scripts. Keeping them on disk is useful; committing them means
+# every future reader has to work out whether they're still current.
+_working/
+
 # OS / editor cruft
 .DS_Store
 

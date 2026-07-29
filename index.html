@@ -281,7 +281,7 @@
       layers: basemapStyleLayers
     },
     // Initial view fits the Roaring Fork HUC-8 watershed bounds (computed
-    // from data/reference/huc8_roaring_fork.geojson) instead of a fixed
+    // from the huc8_roaring_fork row in boundaries.geojson) instead of a fixed
     // center/zoom, so the map opens already framed on the actual watershed
     // rather than an arbitrary point - matches this being a watershed map
     // first, org directory second.
@@ -344,12 +344,10 @@
     // "Boundaries vs. orgs (normalized structure)".
     Promise.all([
       loadJSON('data/reference/upper_colorado_region.geojson'),
-      loadJSON('data/reference/co_west_slope_basin_dissolved.geojson'),
-      loadJSON('data/reference/huc8_roaring_fork.geojson'),
       loadJSON('data/reference/nhd_rivers.geojson'),
       loadJSON('data/clean/boundaries.geojson'),
       loadJSON('data/clean/orgs.json')
-    ]).then(([ucr, basin, huc8, rivers, boundaries, orgs]) => {
+    ]).then(([ucr, rivers, boundaries, orgs]) => {
 
       // Group orgs by boundary_id for the click-time join.
       const orgsByBoundary = new Map();
@@ -415,62 +413,11 @@
         }
       });
 
-      // ---- Colorado West Slope / Colorado River Basin in CO - basin-scale outline ----
-      // Recolored to the site's own sky-blue accent (sampled from the logo),
-      // so reference/watershed context reads as "water" and stays visually
-      // distinct from the category-colored org layer on top of it.
-      map.addSource('co-west-slope-basin', { type: 'geojson', data: basin });
-      map.addLayer({
-        id: 'basin-fill',
-        type: 'fill',
-        source: 'co-west-slope-basin',
-        paint: {
-          'fill-color': rootStyle.getPropertyValue('--sky').trim(),
-          'fill-opacity': 0.03
-        }
-      });
-      map.addLayer({
-        id: 'basin-outline',
-        type: 'line',
-        source: 'co-west-slope-basin',
-        paint: {
-          'line-color': rootStyle.getPropertyValue('--sky').trim(),
-          'line-width': 1,
-          'line-dasharray': [3, 2],
-          'line-opacity': 0.7
-        }
-      });
-
-      // ---- Roaring Fork HUC-8 - local watershed boundary ----
-      map.addSource('huc8-roaring-fork', { type: 'geojson', data: huc8 });
-      map.addLayer({
-        id: 'huc8-fill',
-        type: 'fill',
-        source: 'huc8-roaring-fork',
-        paint: {
-          'fill-color': rootStyle.getPropertyValue('--navy').trim(),
-          'fill-opacity': 0.04
-        }
-      });
-      map.addLayer({
-        id: 'huc8-outline',
-        type: 'line',
-        source: 'huc8-roaring-fork',
-        paint: {
-          'line-color': rootStyle.getPropertyValue('--navy').trim(),
-          'line-width': 1.5,
-          'line-dasharray': [4, 2],
-          'line-opacity': 0.6
-        }
-      });
-
       // ---- Named rivers/streams (NHD) - watershed context ----
       // Curated set of 12 main-stem rivers + tributaries tied to this
       // project's orgs/caucuses (see data/reference/nhd_rivers.geojson's own
       // caveat field) - not the full NHD network, which runs into the
-      // hundreds of minor named/unnamed streams in this area. (Briefly
-      // disabled 7/29/26 while tracking down a scattered-marks rendering bug
-      // - turned out to be the unrelated 'org-fill-hover' layer, not this.)
+      // hundreds of minor named/unnamed streams in this area.
       map.addSource('nhd-rivers', { type: 'geojson', data: rivers });
       map.addLayer({
         id: 'rivers-line',
@@ -531,16 +478,10 @@
       // NOTE: a separate 'org-fill-hover' layer (opacity driven by
       // feature-state 'hover', meant to highlight a boundary on mouseover)
       // was removed 7/29/26 - it was never actually wired up (no
-      // setFeatureState call anywhere sets hover:true, so it should have
-      // been permanently invisible), but its zero-opacity fill was still
-      // producing faint rendering seams at complex polygon vertices - a
-      // WebGL tessellation artifact that showed up as small scattered marks
-      // across the map, worst on complex many-vertex shapes like the CO West
-      // Slope basin and WDWCD. Since the hover effect was never functional
-      // anyway, simplest fix was to remove the layer rather than debug the
-      // artifact. If hover highlighting is wanted later, re-add this layer
-      // AND wire up the mousemove handler that actually sets the feature
-      // state - don't just re-add the layer alone.
+      // setFeatureState call anywhere sets hover:true), so it was dead code.
+      // If hover highlighting is wanted later, re-add this layer AND wire up
+      // the mousemove handler that actually sets the feature state - don't
+      // just re-add the layer alone.
 
       // Trying line-offset first for coincident boundaries (e.g. WDWCD's
       // district line running along a municipal line) - nudges each line a
@@ -563,9 +504,54 @@
         }
       });
 
-      // Cursor change on hover - org boundaries and the HUC-8 reference layer
-      // are both clickable, so show the pointer over either.
-      const interactiveLayers = ['org-fill', 'huc8-fill'];
+      // ---- Boundary labels ----
+      // These shapes span four orders of magnitude - Carbondale is 5 km², the
+      // CO West Slope basin is 131,000 - so labeling them all at every zoom
+      // would be an unreadable pile. Instead a shape only labels once it's
+      // physically big enough on screen to hold text, using its own area as
+      // the test: below zoom 7 only the basin qualifies, 7-9 adds the
+      // watershed/conservancy-district tier, and from zoom 10 the towns and
+      // small service areas come in.
+      //
+      // Driving this off `areasqkm` rather than a hand-maintained per-feature
+      // minzoom means a newly added boundary gets sensible behavior for free.
+      // Note filters re-evaluate at integer zooms only, so labels appear on
+      // zoom-step boundaries rather than mid-pinch - fine for labels.
+      //
+      // `label` is the short map-scale name; `name` stays the formal one for
+      // the popup ("Snowmass W&S" vs "Snowmass Water and Sanitation District",
+      // which would overflow an 11 km² polygon at any readable size).
+      map.addLayer({
+        id: 'org-label',
+        type: 'symbol',
+        source: 'boundaries',
+        filter: ['>=', ['get', 'areasqkm'],
+          ['step', ['zoom'],
+            100000,   // < z7  - basin only
+            7, 900,   // z7-9  - + watersheds and conservancy districts
+            10, 0     // z10+  - everything
+          ]
+        ],
+        layout: {
+          'text-field': ['get', 'label'],
+          'text-font': ['Noto Sans Medium'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 6, 10, 10, 12, 14, 15],
+          'text-max-width': 8,
+          'text-padding': 6,
+          'text-letter-spacing': 0.01,
+          // Larger shapes win placement conflicts - a town label losing to a
+          // district label is the right tradeoff at the zoom where both fit.
+          'symbol-sort-key': ['-', 0, ['get', 'areasqkm']]
+        },
+        paint: {
+          'text-color': ['get', '_categoryColor'],
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 1.8
+        }
+      });
+
+      // Cursor change on hover - org boundaries are clickable.
+      const interactiveLayers = ['org-fill'];
       interactiveLayers.forEach(layerId => {
         map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = ''; });
@@ -580,18 +566,16 @@
         const hits = map.queryRenderedFeatures(e.point, { layers: interactiveLayers });
         if (hits.length === 0) return;
 
-        // Org boundaries: collect every unique boundary_id hit at this point,
-        // then join to every org tied to each one (a single boundary can
-        // itself hold multiple orgs, e.g. RFC/RWAPA/PCHR on the HUC-8).
-        const boundaryIds = new Set(
-          hits.filter(f => f.layer.id === 'org-fill').map(f => f.properties.boundary_id)
-        );
-        const matchedOrgs = Array.from(boundaryIds).flatMap(id => orgsByBoundary.get(id) || []);
+        // Every boundary hit at this point, keyed by boundary_id, then joined
+        // to the org(s) tied to each - a single shape can carry several orgs
+        // (RFC/RWAPA/PCHR share the Roaring Fork HUC-8).
+        const hitBoundaries = new Map();
+        hits.filter(f => f.layer.id === 'org-fill')
+            .forEach(f => hitBoundaries.set(f.properties.boundary_id, f.properties));
+        const matchedOrgs = Array.from(hitBoundaries.keys())
+          .flatMap(id => orgsByBoundary.get(id) || []);
 
-        // Watershed reference layer hit at the same point, if any.
-        const huc8Hit = hits.find(f => f.layer.id === 'huc8-fill');
-
-        if (matchedOrgs.length === 0 && !huc8Hit) return;
+        if (matchedOrgs.length === 0) return;
 
         const orgsHtml = matchedOrgs.map(org => {
           const website = org.website
@@ -609,17 +593,31 @@
           `;
         }).join('');
 
-        const huc8Html = huc8Hit ? `
-          <div class="popup-context-block">
-            <div class="popup-context-label">Watershed</div>
-            <div class="popup-org-name">${huc8Hit.properties.name} watershed</div>
-            <div class="popup-desc">HUC-8 ${huc8Hit.properties.huc8} · ${Math.round(huc8Hit.properties.areasqkm).toLocaleString()} km²</div>
-          </div>
-        ` : '';
+        // Watershed-scale shapes get an extra context block with their area
+        // and HUC code. Both read straight off the boundary feature - name,
+        // areasqkm and huc_code all live in boundaries.geojson alongside the
+        // geometry, so there's no second file to keep in sync.
+        const contextHtml = ['huc8_roaring_fork', 'co_west_slope_basin', 'huc10_crystal_river']
+          .filter(id => hitBoundaries.has(id))
+          .map(id => {
+            const p = hitBoundaries.get(id);
+            const label = p.huc_code ? 'Watershed' : 'Basin';
+            const detail = [
+              p.huc_code ? `HUC ${p.huc_code}` : null,
+              `${Math.round(p.areasqkm).toLocaleString()} km²`
+            ].filter(Boolean).join(' · ');
+            return `
+              <div class="popup-context-block">
+                <div class="popup-context-label">${label}</div>
+                <div class="popup-org-name">${p.name}</div>
+                <div class="popup-desc">${detail}</div>
+              </div>
+            `;
+          }).join('');
 
         new maplibregl.Popup({ offset: 12, maxWidth: '300px' })
           .setLngLat(e.lngLat)
-          .setHTML(orgsHtml + huc8Html)
+          .setHTML(orgsHtml + contextHtml)
           .addTo(map);
       });
 

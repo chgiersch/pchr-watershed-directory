@@ -1,23 +1,21 @@
-# ArcGIS Pro project cruft / lock files - not needed in version control
-*.sr.lock
-*.aprx.lock
-*.gdb/
-*.aprx.bak
+# OS / editor cruft
 .DS_Store
 
-# Shapefile exports are ArcGIS-review-only copies of the canonical GeoJSON
-# (see README "Standard schema") - regenerable, and the sandbox's inability to
-# overwrite files means these accumulate as _v2/_v3/etc. duplicates. Don't
-# version-control them; GeoJSON is the source of truth.
+# Desktop GIS project and lock files - local working artifacts, not source
+*.sr.lock
+*.aprx.lock
+*.aprx.bak
+*.gdb/
+
+# Shapefile is a derived format. The GeoJSON in data/clean and data/reference
+# is the source of truth; committing a second copy of every shape means the
+# two drift apart silently. Export locally if a desktop tool needs to read it.
 *.shp
 *.shx
 *.dbf
 *.cpg
 *.prj
 
-# Orphaned georeferencing aid for the RFWSD PDF - no longer needed since
-# RFWSD's real boundary came from Colorado DOLA instead (7/28/26).
+# Georeferencing scratch for the RFWSD PDF - superseded once RFWSD's real
+# boundary came from Colorado DOLA (7/28/26).
 data/raw/rfwsd_service_area_2007.png*
-
-# Deprecated placeholder from an earlier styling exploration
-data/reference/_category_palette_preview.*

@@ -3,14 +3,36 @@
 ## Folder layout
 
 ```
-pchr_watershed_map/
+pchr-watershed-directory/
+├── index.html                          # the map - MapLibre GL JS, single file
 ├── data/
-│   ├── raw/         # Original files exactly as received (shapefiles, KML, KMZ, etc.)
-│   ├── clean/        # Standardized GeoJSON, one file per org, output of clean_org_boundary.py
-│   └── reference/    # Watershed boundary, rivers/creeks, roads, municipal boundaries (HUC-8, NHD, etc.)
-├── scripts/          # Reusable Python scripts for the data pipeline
-└── build/            # Tippecanoe/PMTiles output - the final tile archive for the map
+│   ├── raw/                            # originals exactly as received, never edited
+│   ├── clean/
+│   │   ├── boundaries.geojson          # every service-area shape, one row each
+│   │   └── orgs.json                   # every org, pointing at a boundary_id
+│   ├── reference/                      # map context that isn't an org boundary
+│   │   ├── upper_colorado_region.geojson
+│   │   ├── nhd_rivers.geojson
+│   │   └── caucuses.geojson
+│   └── basemap/                        # self-hosted PMTiles archives
+└── scripts/                            # data pipeline
 ```
+
+**One shape, one place.** Every polygon the map draws lives exactly once, as a row in
+`data/clean/boundaries.geojson`. There are no per-org files, no duplicate copies in
+`data/reference/`, and no flattened export with the geometry repeated per org.
+
+This wasn't always true, and the drift caused real bugs: the Roaring Fork HUC-8 and the CO West
+Slope basin each existed both as a `boundaries.geojson` row *and* as a standalone reference file,
+and both copies were being drawn — producing overlapping outlines that read as scattered dotted
+fragments across the map. Consolidated 7/30/26.
+
+`data/reference/` now holds only shapes that are *not* any org's service area: the HUC-2 context
+outline, the rivers layer, and the caucus boundaries (pending a scope decision — see Gwen's list).
+
+Shapefiles are gitignored. They're a derived format, and keeping a committed `.shp` beside every
+`.geojson` is the same drift problem in a different costume. Export locally if a desktop tool
+needs to read the data.
 
 ## Workflow for each incoming org file
 
@@ -38,67 +60,39 @@ pchr_watershed_map/
 4. **Clean file lands in `data/clean/`** as `<org_short>.geojson`, ready for the next pipeline step
    (DuckDB → GeoParquet → Tippecanoe → PMTiles).
 
-## Standard schema
+## Data model: boundaries + orgs
 
-Every cleaned org file has the same eight properties, so they merge cleanly later:
+Several orgs share the exact same service area — RFC/RWAPA/PCHR all use the Roaring Fork HUC-8;
+CBRT/CWCB/CRD all use the CO West Slope basin. So geometry and org attributes are separate:
 
-| Field       | Description                                              |
-|-------------|------------------------------------------------------------|
-| `org_name`  | Full organization name                                     |
-| `org_short` | Short code/abbreviation (used in filenames)                |
-| `category`  | One of: Conservation & Advocacy, Governance & Policy, Water Providers, Infrastructure & Planning |
-| `website`   | Org's website, no protocol (e.g. `swsd.org`)                |
-| `source`    | Where the geometry came from, e.g. "KML export" or "Colorado DOLA - Water and Sanitation Districts" |
-| `pulldate`  | Date the file was received/pulled, `YYYY-MM-DD`             |
-| `srcurl`    | Source URL if applicable, blank string if received via email/file |
-| `caveat`    | Short freeform note: who provided it, confirmations, known limitations or approximations |
+**`data/clean/boundaries.geojson`** — one row per unique shape:
 
-**Metadata note (as of 7/28/26):** this replaces the original single `source_note` free-text
-field. Field names are all ≤10 characters and values are kept short and structured on purpose -
-Shapefile's `.dbf` format truncates field names past 10 characters and text values past 254
-characters, and the old long-paragraph `source_note` got silently cut off mid-sentence in a real
-export (WDWCD's shapefile lost its last sentence). GeoJSON has no such limit and remains the
-canonical, full-fidelity format; Shapefile exports exist only so ArcGIS Pro can browse the data
-(see "Why GeoJSON doesn't always show up in ArcGIS" below) and should not be treated as an
-archival copy for anything text-heavy.
+| Field | Description |
+|---|---|
+| `boundary_id` | Stable key orgs point at, e.g. `wdwcd_boundary`, `huc8_roaring_fork` |
+| `name` | Human-readable name of the shape |
+| `areasqkm` | Area in km², computed in EPSG:5070 (Conus Albers) |
+| `huc_code` | HUC-8/HUC-10 code for watershed shapes, empty string otherwise |
+| `source` | Where the geometry came from, e.g. "Colorado DOLA - Municipal Boundaries" |
+| `pulldate` | When it was received/pulled, `YYYY-MM-DD` |
+| `srcurl` | Source URL, empty string if received by email/file |
+| `caveat` | Provenance and known limitations, including any cleaning applied |
 
-**Coverage (as of 7/28/26):** all 8 standalone org files, `boundaries.geojson`, `orgs.json`,
-and `orgs_proof_of_concept.geojson` use this schema. The `data/reference/` backdrop layers
-(HUC-8/HUC-10/basin/caucuses/PLSS grid) were migrated to the same `source`/`pulldate`/`srcurl`/
-`caveat` fields in this same pass, on top of whatever feature-specific fields each already had
-(e.g. `huc8`, `areasqkm`, `caucus_name`). `wdwcd_pitkin_official.geojson` is now marked
-superseded in its own `caveat` field - see the Reference layers section below.
+**`data/clean/orgs.json`** — one row per org: `org_name`, `org_short`, `category`, `website`,
+`boundary_id`, `category_confirmed`, and an org-specific `caveat`. No geometry.
 
-## Boundaries vs. orgs (normalized structure)
+`index.html` draws each boundary once from `boundaries.geojson`, then joins to `orgs.json` on
+`boundary_id` at click-time so the popup can list every org tied to that shape. `name`/`areasqkm`/
+`huc_code` live on the boundary row itself, which is why no separate reference file needs loading
+to render the watershed/basin context blocks.
 
-Several orgs share the exact same boundary (e.g. RFC/RWAPA/PCHR all use the Roaring
-Fork HUC-8; CBRT/CWCB/CRD all use the CO West Slope basin). Storing the same
-polygon once per org causes stacked fills to render at compounded opacity on the
-map, and risks the shapes drifting out of sync if one copy gets edited later.
+**Categories:** Conservation & Advocacy, Governance & Policy, Water Providers,
+Infrastructure & Planning.
 
-So as of the proof-of-concept pass, geometry and org attributes are split into two files:
-
-- `data/clean/boundaries.geojson` (+ `.shp`) - one row per **unique** shape, keyed by
-  `boundary_id`, carrying the geometry's own `source`/`pulldate`/`srcurl`/`caveat`.
-- `data/clean/orgs.json` - one row per **org** (name, category, website, `boundary_id`,
-  `category_confirmed`, and an org-specific `caveat`), no geometry of its own.
-
-Rendering should draw each unique boundary once, then join to `orgs.json` on
-`boundary_id` at click-time to show all org(s) tied to that shape in the popup - and to
-show that boundary's own provenance fields alongside the org's caveat.
-`data/clean/orgs_proof_of_concept.geojson`/`.shp` (the flattened, one-row-per-org
-version with duplicated geometry) still exists for a quick visual scan in ArcGIS,
-but `boundaries.geojson` + `orgs.json` is the source of truth going forward.
-
-## Why GeoJSON doesn't always show up in ArcGIS
-
-ArcGIS Pro's Catalog pane doesn't treat `.geojson` as a fully native, always-recognized
-format the way it does Shapefile or File Geodatabase - GeoJSON read support was added
-later and is still inconsistent, especially over a network share (e.g. a Parallels VM
-shared folder), where Catalog sometimes shows the file as a generic non-spatial icon
-even though it's perfectly valid. The fix isn't to change the GeoJSON - it's to also
-export a `.shp` copy for ArcGIS review, and keep GeoJSON as the real source of truth
-for the web map.
+**Why field names stay ≤10 characters and values stay short:** a holdover from when Shapefile
+exports were committed (`.dbf` truncates field names past 10 chars and text past 254). The
+constraint is no longer binding since GeoJSON is the only committed format, but the schema is
+kept as-is because it's already consistent across every file and nothing is gained by churning it.
 
 ## Org tracker
 
@@ -121,7 +115,7 @@ for the web map.
 | City of Aspen | Done - real official municipal boundary from Colorado DOLA's "Municipal Boundaries" dataset (7/28/26), ~10.0 sq km. Water comes from Maroon and Castle Creeks, with new storage ideas at Woody Creek to replace the reservoirs given up on Maroon/Castle Creeks (per Gwen, 7/28/26) - noted in the popup description. | | ✓ |
 | City of Glenwood Springs | Done - real official municipal boundary from Colorado DOLA's "Municipal Boundaries" dataset (7/28/26), ~15.4 sq km. Water supply is Grizzly and No Name creeks plus some Roaring Fork water rights (per Gwen, 7/28/26) - noted in the popup description. | | ✓ |
 | Town of Basalt | Done - real official municipal boundary from Colorado DOLA's "Municipal Boundaries" dataset (7/28/26), ~5.3 sq km. One of the original 3 PDF-only orgs (alongside RFWSD/Mid-Valley Metro) - resolved the same way instead of manually georeferencing the PDF. Straddles Eagle/Pitkin/Garfield county lines. | | ✓ |
-| Snowmass Capitol Creek Caucus | Real boundary pulled directly from Pitkin County GIS (`data/reference/caucuses.geojson`/`data/clean/caucuses_v2.shp`, 7/28/26) - no shapefile request needed. Scope question below: is this one of 13 Pitkin caucuses to include, or all 13? | | |
+| Snowmass Capitol Creek Caucus | Real boundary pulled directly from Pitkin County GIS (`data/reference/caucuses.geojson`, 7/28/26) - no shapefile request needed. Scope question below: is this one of 13 Pitkin caucuses to include, or all 13? | | |
 | Crystal River Caucus | Real boundary pulled directly from Pitkin County GIS, same file as above - no shapefile request needed. Same scope question as Snowmass Capitol Creek Caucus. | | |
 | Other 11 Pitkin caucuses (Emma, Fryingpan Valley, Woody Creek, Tennis Club, Smuggler, Castle Creek, East of Aspen, Maroon Creek, Owl Creek, Upper Snowmass Creek, Brush Creek) | Real boundaries already pulled (same file), not yet decided whether they belong on a water-org-specific map since most aren't water-themed. Pending scope call with Gwen. | | |
 
@@ -161,30 +155,56 @@ To be pulled into `data/reference/`:
 - Hillshade/DEM (optional, for basemap)
 - Rivers/creeks from NHD - **done, see below**
 
-**Status (as of 7/28/26):** `huc8_roaring_fork.geojson`, `co_west_slope_basin.geojson` (+ its
-dissolved single-polygon version), `upper_colorado_region.geojson`, and `huc10_crystal_river.geojson`
-are pulled and now carry the full `source`/`pulldate`/`srcurl`/`caveat` schema.
-`caucuses.geojson` (all 13 official Pitkin caucuses) is also pulled and migrated - scope decision
-(2 vs. 13 on the map) still pending with Gwen. `plss_grid_mvmd.geojson` (BLM PLSS section grid)
-is migrated too, but is an orphaned georeferencing aid - MVMD's real boundary came from DOLA
-instead, so this file isn't used in the final map. `wdwcd_pitkin_official.geojson` (the old
-Pitkin-County-only sliver) is migrated and explicitly marked `SUPERSEDED` in its `caveat` field -
-kept for reference/comparison only, not used in the final map since `data/clean/wdwcd.geojson`
-now has the real full district boundary.
+**Status (as of 7/30/26):** the Roaring Fork HUC-8, Crystal River HUC-10, and CO West Slope basin
+are all rows in `data/clean/boundaries.geojson` — they're real assigned service areas
+(RFC/RWAPA/PCHR, CVEPA, and CBRT/CWCB/CRD respectively), not backdrop, so they belong with the
+other boundaries rather than in `reference/`.
 
-**Interior-holes fix (7/29/26):** `co_west_slope_basin_dissolved.geojson`, and the duplicate copy of
-that same geometry inside `data/clean/boundaries.geojson` (`boundary_id: co_west_slope_basin`),
-each had 422 tiny interior holes (up to ~1.7 km², many far smaller) left over from an imperfect
-`unary_union` dissolve of the 30 HUC-8 subbasins that make up this layer - adjacent subwatersheds
-didn't perfectly seal along their shared edges. These rendered as small isolated navy-outlined gap
-shapes scattered across the basin, most visibly near Kremmling, and were initially mistaken for the
-same rendering bug as the `org-fill-hover` artifact above before being traced to actual geometry
-holes (confirmed by toggling layers and inspecting with `queryRenderedFeatures`, then visually
-confirmed against a Kremmling-area screenshot). Fixed in both files by keeping only each polygon's
-exterior ring (`Polygon(geom.exterior)`) and dropping all interior rings, since a real watershed
-boundary has no legitimate internal exclaves. `orgs_proof_of_concept.geojson` was regenerated from
-the fixed `boundaries.geojson` afterward. Verified live in-browser post-fix: no gap shapes remain
-around Kremmling or anywhere else in the basin at a range of zoom levels.
+`data/reference/` now holds only the three shapes that aren't anyone's service area:
+`upper_colorado_region.geojson` (HUC-2 context outline), `nhd_rivers.geojson`, and
+`caucuses.geojson` (all 13 official Pitkin caucuses — scope decision, 2 vs. 13, still pending
+with Gwen).
+
+Removed in the 7/30/26 consolidation: the undissolved 30-feature `co_west_slope_basin.geojson`
+(superseded by the dissolved version, which then moved into `boundaries.geojson`),
+`wdwcd_pitkin_official.geojson` (the old Pitkin-County-only sliver, already marked SUPERSEDED —
+`boundaries.geojson` carries the real full district), `plss_grid_mvmd.geojson` (orphaned
+georeferencing aid; MVMD's real boundary came from DOLA), the nine standalone per-org GeoJSON
+files, and `orgs_proof_of_concept.geojson` (a flattened copy with geometry duplicated per org).
+
+**Duplicate-layer fix (7/30/26) - the actual cause of the "fragments":** `co_west_slope_basin` and
+`huc8_roaring_fork` were each being drawn **twice**. Both shapes exist as rows in
+`boundaries.geojson` (they're the real assigned org boundary for CBRT/CWCB/CRD and RFC/RWAPA/PCHR
+respectively), so `org-fill`/`org-outline` drew them - but they *also* had their own dedicated
+"context" layers left over from before those org assignments existed: `basin-fill`/`basin-outline`
+and `huc8-fill`/`huc8-outline`. The same polygon rendered on top of itself as a dashed backdrop plus
+a solid, `line-offset`-nudged org outline, so every shared edge showed as two slightly-separated
+lines - reading as scattered dotted/fragmented shapes, especially where the two boundaries run
+close together. Fixed by deleting the four redundant layers entirely; `org-fill`/`org-outline` now
+draw all 12 boundaries exactly once each, no filters or exclusions. The `name`/`areasqkm`/`huc_code`
+metadata that the popup's "Watershed"/"Basin" block needs was folded into `boundaries.geojson`, so
+the standalone reference files could be deleted rather than kept around just for their attributes.
+Clicking either shape still surfaces its orgs, via the normal `org-fill` path like everything else.
+
+Worth recording, since this took several passes to find: two *other* real bugs were fixed along the
+way and neither was the cause of what was being reported. (1) The `org-fill-hover` layer removal
+(above) was genuine dead code but not the fragment source. (2) Interior holes in the geometry (see
+below) were real and worth fixing, but also not the fragment source - a fix for them was committed,
+then reverted after the artifacts persisted, then re-applied once the duplicate-layer cause was
+actually identified. Lesson: when a visual artifact traces a boundary's *edges*, suspect duplicate
+or offset rendering of the same geometry before suspecting the geometry itself.
+
+**Interior-holes fix (7/29/26, completed 7/30/26):** separately from the above, several polygons
+carried tiny interior holes that showed as small notches cut out of the fill. The CO West Slope
+basin had 422 of them (up to ~1.7 km², most far smaller) from an imperfect `unary_union` dissolve
+of the 30 HUC-8 subbasins - adjacent subwatersheds didn't seal perfectly along shared edges, most
+visible near Kremmling. Six DOLA-sourced municipal/district boundaries had the same issue from
+their own source geometry: `wdwcd_boundary` (36 holes), `basalt_boundary` (19), `aspen_boundary`
+(11), `gws_boundary` (8), `mvmd_boundary` (6), `carbondale_boundary` (5) - 85 total. All fixed by
+keeping only each polygon's exterior ring (`Polygon(geom.exterior)`, applied per-part for
+`MultiPolygon` rows) and dropping interior rings, since neither a watershed nor a municipal
+district has legitimate internal exclaves. All 12 rows in `boundaries.geojson` verify as
+`holes: 0, valid: True`.
 
 **Rivers (added 7/29/26):** `data/reference/nhd_rivers.geojson` - 12 named main-stem rivers and
 tributaries (Roaring Fork, Crystal, Fryingpan, Colorado rivers plus
@@ -235,7 +255,7 @@ independent of the basemap.
 ### Initial view
 
 The map opens framed on the Roaring Fork HUC-8 watershed bounds (`bounds` option in the
-MapLibre constructor, computed from `data/reference/huc8_roaring_fork.geojson`'s own extent) rather
+MapLibre constructor, computed from that boundary's extent in `data/clean/boundaries.geojson`) rather
 than a fixed center/zoom - this is a watershed map first, org directory second, so it should open
 already showing the watershed.
 

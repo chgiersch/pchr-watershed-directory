@@ -275,21 +275,62 @@ body {
 .org__meta dt { display: inline; }
 .org__meta dd { display: inline; margin: 0; }
 
-.org__link { margin: 0; }
-.org__link a {
-  display: inline-block;
+/* Action row at the foot of an entry. Wraps rather than scrolls, so it still
+   works at 320px and at 200% zoom (WCAG 1.4.10). */
+.org__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.org__show,
+.org__site {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: inherit;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--navy);
-  text-decoration: none;
-  border: 1.5px solid var(--navy);
+  line-height: 1.2;
   border-radius: 999px;
-  padding: 0.3rem 0.85rem;
+  padding: 0.42rem 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
 }
-.org__link a:hover,
-.org__link a:focus-visible {
+
+/* Solid, because this is the primary action in an entry - the one thing that
+   connects the text back to the map. The website is secondary and outlined. */
+.org__show {
+  color: #fff;
+  background: var(--navy);
+  border: 1.5px solid var(--navy);
+}
+.org__show:hover { background: #00405f; border-color: #00405f; }
+
+.org__show-icon {
+  width: 0.95em;
+  height: 0.95em;
+  flex: 0 0 auto;
+}
+
+.org__site {
+  color: var(--navy);
+  background: transparent;
+  border: 1.5px solid var(--navy);
+}
+.org__site:hover,
+.org__site:focus-visible {
   background: var(--navy);
   color: #fff;
+}
+
+/* A focus ring in the navy on navy button would vanish, so the offset pushes
+   it clear of the fill. */
+.org__show:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 2px;
 }
 
 /* Visible focus everywhere. Never remove this without replacing it - it's the
@@ -298,6 +339,21 @@ a:focus-visible,
 .org:focus-visible {
   outline: 3px solid var(--sky);
   outline-offset: 2px;
+}
+
+/* Jumping here from the map moves focus to the summary, which is necessary so
+   keyboard and screen reader users land where the page just scrolled. But for
+   a mouse user that painted a heavy ring around the title on top of the
+   selected-entry highlight, which read as two competing states.
+   :focus-visible resolves it: the browser shows the ring for keyboard focus
+   and suppresses it for pointer focus. The :focus rule below is only to clear
+   the UA default in the pointer case - the ring itself is never removed for
+   keyboard users, which would fail WCAG 2.4.7. */
+.org__summary:focus { outline: none; }
+.org__summary:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: -3px;
+  border-radius: 3px;
 }
 
 /* Set by the map when an organization's shape is selected, once the

@@ -134,6 +134,51 @@ def esc(text):
     return html.escape(str(text), quote=True)
 
 
+# Explicit "show me this one" control, emitted for every organization that has
+# a shape on the map.
+#
+# Expanding an entry used to move the map on its own. That conflated two
+# different intentions - "I want to read about this" and "I want to see where
+# this is" - and meant the map jumped around while someone was simply browsing
+# the text. A real button separates them, and it's the affordance a reader can
+# actually see; nothing about a disclosure triangle suggests it drives a map.
+#
+# A <button>, not a link: it performs an action on this page rather than
+# navigating anywhere, so it needs to be a button for keyboard and screen
+# reader users to get the right behaviour and announcement. It degrades to
+# nothing useful without JavaScript, which is why it carries no href to break.
+SHOW_ON_MAP = (
+    '<button type="button" class="org__show" data-show-on-map>'
+    '<svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" '
+    'focusable="false">'
+    '<path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 '
+    '4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" '
+    'stroke-width="1.5" stroke-linejoin="round"/>'
+    '<circle cx="8" cy="5.9" r="1.45" fill="currentColor"/>'
+    "</svg>"
+    "Show on map</button>"
+)
+
+
+def render_actions(show_on_map, website):
+    """The action row at the foot of an entry: show-on-map, then the website."""
+    items = []
+    if show_on_map:
+        items.append(SHOW_ON_MAP)
+    if website:
+        site = esc(website)
+        items.append(
+            f'<a class="org__site" href="https://{site}" rel="noopener">{site}</a>'
+        )
+    if not items:
+        return []
+    return (
+        ['      <p class="org__actions">']
+        + [f"        {item}" for item in items]
+        + ["      </p>"]
+    )
+
+
 def funding_badge(value):
     """Turn the roster's free-text funding answer into a flag plus detail.
 
@@ -215,12 +260,7 @@ def render_entry(org):
         parts.extend(meta)
         parts.append("      </dl>")
 
-    if org.get("website"):
-        site = esc(org["website"])
-        parts.append(
-            f'      <p class="org__link"><a href="https://{site}" '
-            f'rel="noopener">{site}</a></p>'
-        )
+    parts.extend(render_actions(bool(org.get("boundary_id")), org.get("website")))
 
     parts.append("    </div>")
     parts.append("  </details>")
@@ -238,11 +278,8 @@ def render_caucus_entry(name, area, note, site):
         f'<span class="org__label">Area</span> {esc(area)}</p>'
     )
     parts.append(f'      <p class="org__desc">{esc(note)}</p>')
-    if site:
-        parts.append(
-            f'      <p class="org__link"><a href="https://{esc(site)}" '
-            f'rel="noopener">{esc(site)}</a></p>'
-        )
+    # No show-on-map button: the caucuses aren't drawn (7/30 call).
+    parts.extend(render_actions(False, site))
     parts.append("    </div>")
     parts.append("  </details>")
     return "\n".join(parts)
@@ -326,6 +363,10 @@ __FRAGMENT__
     organization's full jurisdiction is described in its entry above.
   </p>
 </footer>
+
+<!-- Optional. Links the directory to the map in both directions. Everything
+     above works without it. -->
+<script src="directory-map-link.js"></script>
 
 </body>
 </html>

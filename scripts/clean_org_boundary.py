@@ -3,19 +3,48 @@ Clean and standardize an incoming org service-area file (shapefile, KML, KMZ, Ge
 into the project's standard GeoJSON schema.
 
 Usage:
-    python clean_org_boundary.py <input_file> <org_name> <org_short> <category> <website> <source_note>
+    python clean_org_boundary.py <input_file> <org_name> <org_short> <category> <website> <source> <pulldate> <srcurl> <caveat>
+
+Metadata fields (kept short and structured so they survive Shapefile's 10-char field
+name limit and 254-char text limit without truncation - see README "Standard schema"):
+    source    - where the file/data came from, e.g. "KML export" or "Colorado DOLA - Water and Sanitation Districts"
+    pulldate  - date received/pulled, YYYY-MM-DD
+    srcurl    - source URL if applicable, blank string "" if received via email/file
+    caveat    - short freeform note: who provided it, known limitations, approximations, confirmations
 
 Example:
     python clean_org_boundary.py ../data/raw/swsd_district_boundary.kml \
         "Snowmass Water and Sanitation District" "SWSD" "Water Providers" "swsd.org" \
-        "Service area boundary, general perimeter. Provided by Darrell Smith via Google Earth export, June 2026."
+        "KML export via Google Earth" "2026-06-24" "" \
+        "Provided by Darrell Smith. Service area boundary, general perimeter."
 
 Output is written to ../data/clean/<org_short>.geojson
 """
 
 import sys
 import geopandas as gpd
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import Polygon, MultiPolygon, LineString, MultiLineString
+
+
+def close_lines_to_polygons(geom):
+    """Some GIS exports (e.g. Google Earth/KML) save a boundary as a closed line
+    rather than a filled polygon. If we get a LineString/MultiLineString whose
+    ring(s) are closed (first point == last point), convert to Polygon(s)."""
+    if isinstance(geom, LineString):
+        coords = list(geom.coords)
+        if len(coords) >= 4 and coords[0] == coords[-1]:
+            return Polygon(coords)
+        raise ValueError("Got an open LineString - can't convert to a boundary polygon")
+    elif isinstance(geom, MultiLineString):
+        polys = []
+        for line in geom.geoms:
+            coords = list(line.coords)
+            if len(coords) >= 4 and coords[0] == coords[-1]:
+                polys.append(Polygon(coords))
+            else:
+                raise ValueError("Got an open line within a MultiLineString - can't convert")
+        return polys[0] if len(polys) == 1 else MultiPolygon(polys)
+    return geom
 
 
 def drop_z(geom):
@@ -30,7 +59,7 @@ def drop_z(geom):
     return geom
 
 
-def clean_org_boundary(input_path, org_name, org_short, category, website, source_note, output_dir="../data/clean"):
+def clean_org_boundary(input_path, org_name, org_short, category, website, source, pulldate, srcurl, caveat, output_dir="../data/clean"):
     # Auto-detect driver for KML/KMZ
     driver = "KML" if input_path.lower().endswith((".kml", ".kmz")) else None
 
@@ -45,6 +74,12 @@ def clean_org_boundary(input_path, org_name, org_short, category, website, sourc
         gdf = gdf.set_crs("EPSG:4326")
     elif gdf.crs.to_epsg() != 4326:
         gdf = gdf.to_crs("EPSG:4326")
+
+    # Convert closed boundary lines to polygons (some KML exports do this)
+    line_types = {"LineString", "MultiLineString"}
+    if gdf.geometry.geom_type.isin(line_types).any():
+        print("NOTE: input has line geometry (closed boundary ring) - converting to polygon")
+        gdf["geometry"] = gdf["geometry"].apply(close_lines_to_polygons)
 
     # Drop Z dimension
     gdf["geometry"] = gdf["geometry"].apply(drop_z)
@@ -66,7 +101,10 @@ def clean_org_boundary(input_path, org_name, org_short, category, website, sourc
         "org_short": [org_short],
         "category": [category],
         "website": [website],
-        "source_note": [source_note],
+        "source": [source],
+        "pulldate": [pulldate],
+        "srcurl": [srcurl],
+        "caveat": [caveat],
         "geometry": [merged_geom]
     }, crs="EPSG:4326")
 
@@ -77,14 +115,17 @@ def clean_org_boundary(input_path, org_name, org_short, category, website, sourc
     print(f"Approx area: {area_km2:.1f} sq km")
     print(f"Bounds: {gdf_clean.geometry.bounds.values[0]}")
 
+    # Use plain file write, not gdf.to_file() - GDAL's overwrite (delete-then-recreate)
+    # fails with "Operation not permitted" on this project's mounted folder.
     output_path = f"{output_dir}/{org_short.lower().replace(' ', '_')}.geojson"
-    gdf_clean.to_file(output_path, driver="GeoJSON")
+    with open(output_path, "w") as f:
+        f.write(gdf_clean.to_json())
     print(f"\nExported to: {output_path}")
     return gdf_clean
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 7:
+    if len(sys.argv) != 10:
         print(__doc__)
         sys.exit(1)
 
@@ -94,5 +135,8 @@ if __name__ == "__main__":
         org_short=sys.argv[3],
         category=sys.argv[4],
         website=sys.argv[5],
-        source_note=sys.argv[6]
+        source=sys.argv[6],
+        pulldate=sys.argv[7],
+        srcurl=sys.argv[8],
+        caveat=sys.argv[9]
     )

@@ -1,0 +1,35 @@
+# Scratch space. Anything that isn't part of the final map or webpage lives
+# here and stays out of git - meeting prep, one-off review exports, throwaway
+# analysis scripts. Keeping them on disk is useful; committing them means
+# every future reader has to work out whether they're still current.
+_working/
+
+# Python virtual environment for the data scripts. Machine- and
+# version-specific (~60MB of compiled wheels) - recreate with:
+#   python3 -m venv .venv && source .venv/bin/activate
+#   pip install geopandas requests
+.venv/
+__pycache__/
+*.pyc
+
+# OS / editor cruft
+.DS_Store
+
+# Desktop GIS project and lock files - local working artifacts, not source
+*.sr.lock
+*.aprx.lock
+*.aprx.bak
+*.gdb/
+
+# Shapefile is a derived format. The GeoJSON in data/clean and data/reference
+# is the source of truth; committing a second copy of every shape means the
+# two drift apart silently. Export locally if a desktop tool needs to read it.
+*.shp
+*.shx
+*.dbf
+*.cpg
+*.prj
+
+# Georeferencing scratch for the RFWSD PDF - superseded once RFWSD's real
+# boundary came from Colorado DOLA (7/28/26).
+data/raw/rfwsd_service_area_2007.png*

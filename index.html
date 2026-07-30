@@ -597,13 +597,6 @@
     resizeTimer = setTimeout(() => fitToWatershed(), 150);
   });
 
-  // Temporary diagnostic logging - surfaces any style/source error to the
-  // console immediately, since MapLibre can fire 'error' synchronously
-  // during style validation, before any later-attached listener could catch it.
-  map.on('error', (e) => {
-    console.error('MAPLIBRE ERROR:', e.error ? (e.error.message || e.error) : e, e);
-  });
-
   // Navigation controls
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
 

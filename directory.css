@@ -163,6 +163,11 @@ body {
 
 .org {
   border-bottom: 1px solid var(--rule);
+  /* Clears the selected-entry bar below, which is drawn as a 4px inset shadow
+     on this same element - without it the disclosure chevron sits right on
+     top of the bar. Applied to every entry, not just the selected one, so
+     nothing shifts sideways when a selection moves. */
+  padding-left: 0.6rem;
 }
 .org:first-of-type {
   border-top: 1px solid var(--rule);

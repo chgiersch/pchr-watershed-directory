@@ -6,7 +6,9 @@
     "website": "swsd.org",
     "boundary_id": "swsd_boundary",
     "category_confirmed": true,
-    "caveat": "Service area boundary, general perimeter. Provided by Darrell Smith via Google Earth export, 6/24/26."
+    "caveat": "Service area boundary, general perimeter. Provided by Darrell Smith via Google Earth export, 6/24/26.",
+    "scope": "Snowmass Village",
+    "tier": "service_area"
   },
   {
     "org_name": "Basalt Water Conservancy District",
@@ -15,7 +17,9 @@
     "website": "bwcd.org",
     "boundary_id": "bwcd_boundary",
     "category_confirmed": true,
-    "caveat": "Service area boundary. Provided by Eric Mangeot (Sphero Environmental) via KML export, 7/9/26."
+    "caveat": "Service area boundary. Provided by Eric Mangeot (Sphero Environmental) via KML export, 7/9/26.",
+    "scope": "Eagle, Garfield & Pitkin counties",
+    "tier": "service_area"
   },
   {
     "org_name": "Roaring Fork Conservancy",
@@ -24,7 +28,9 @@
     "website": "roaringfork.org",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "No separate boundary file - operates across the whole Roaring Fork Watershed."
+    "caveat": "No separate boundary file - operates across the whole Roaring Fork Watershed.",
+    "scope": "Roaring Fork watershed",
+    "tier": "watershed"
   },
   {
     "org_name": "RWAPA",
@@ -33,7 +39,9 @@
     "website": "",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Confirmed by Gwen (7/2/26) as covering the whole Roaring Fork Watershed."
+    "caveat": "Confirmed by Gwen (7/2/26) as covering the whole Roaring Fork Watershed.",
+    "scope": "Roaring Fork watershed",
+    "tier": "watershed"
   },
   {
     "org_name": "Pitkin County Healthy Rivers",
@@ -42,7 +50,9 @@
     "website": "",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Per Tim Braun (Pitkin County), the HUC-8 boundary is the \"official\" Healthy Rivers boundary."
+    "caveat": "Per Tim Braun (Pitkin County), the HUC-8 boundary is the \"official\" Healthy Rivers boundary.",
+    "scope": "Roaring Fork watershed",
+    "tier": "watershed"
   },
   {
     "org_name": "CVEPA (Crystal Valley Environmental Protection Association)",
@@ -51,34 +61,42 @@
     "website": "",
     "boundary_id": "huc10_crystal_river",
     "category_confirmed": true,
-    "caveat": "Confirmed by CVEPA via Gwen (7/28/26): service area is only the Crystal River Watershed."
+    "caveat": "Confirmed by CVEPA via Gwen (7/28/26): service area is only the Crystal River Watershed.",
+    "scope": "Crystal River watershed",
+    "tier": "service_area"
   },
   {
     "org_name": "Colorado Basin Roundtable",
     "org_short": "CBRT",
     "category": "Governance & Policy",
     "website": "",
-    "boundary_id": "co_west_slope_basin",
+    "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in."
+    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in.",
+    "scope": "Colorado River Basin",
+    "tier": "regional"
   },
   {
     "org_name": "Colorado Water Conservation Board",
     "org_short": "CWCB",
     "category": "Governance & Policy",
     "website": "",
-    "boundary_id": "co_west_slope_basin",
+    "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in."
+    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in.",
+    "scope": "Statewide",
+    "tier": "regional"
   },
   {
     "org_name": "Colorado River District",
     "org_short": "CRD",
     "category": "Governance & Policy",
     "website": "",
-    "boundary_id": "co_west_slope_basin",
+    "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in."
+    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in.",
+    "scope": "15 West Slope counties",
+    "tier": "regional"
   },
   {
     "org_name": "Roaring Fork Water and Sanitation District",
@@ -87,7 +105,9 @@
     "website": "rfwsd.com",
     "boundary_id": "rfwsd_boundary",
     "category_confirmed": true,
-    "caveat": "Real official boundary from Colorado DOLA, 7/28/26."
+    "caveat": "Real official boundary from Colorado DOLA, 7/28/26.",
+    "scope": "Aspen Glen, Coryell Ranch, Midland Point & Ironbridge",
+    "tier": "service_area"
   },
   {
     "org_name": "Mid Valley Metropolitan District",
@@ -96,7 +116,9 @@
     "website": "mvmdco.org",
     "boundary_id": "mvmd_boundary",
     "category_confirmed": true,
-    "caveat": "Real official boundary from Colorado DOLA, 7/28/26."
+    "caveat": "Real official boundary from Colorado DOLA, 7/28/26.",
+    "scope": "Basalt, El Jebel & nearby unincorporated areas",
+    "tier": "service_area"
   },
   {
     "org_name": "West Divide Water Conservancy District",
@@ -105,7 +127,9 @@
     "website": "wdwcd.org",
     "boundary_id": "wdwcd_boundary",
     "category_confirmed": true,
-    "caveat": "Real official FULL district boundary from Colorado DOLA, 7/28/26 - replaces prior approximation."
+    "caveat": "Real official FULL district boundary from Colorado DOLA, 7/28/26 - replaces prior approximation.",
+    "scope": "Extends west and north beyond the watershed",
+    "tier": "service_area"
   },
   {
     "org_name": "Town of Carbondale",
@@ -114,7 +138,9 @@
     "website": "carbondaleco.net",
     "boundary_id": "carbondale_boundary",
     "category_confirmed": true,
-    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Water supply: Crystal River."
+    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Water supply: Crystal River.",
+    "scope": "Municipal water system",
+    "tier": "service_area"
   },
   {
     "org_name": "City of Aspen",
@@ -123,7 +149,9 @@
     "website": "aspen.gov",
     "boundary_id": "aspen_boundary",
     "category_confirmed": true,
-    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Water supply: Maroon & Castle Creeks."
+    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Water supply: Maroon & Castle Creeks.",
+    "scope": "Municipal water system",
+    "tier": "service_area"
   },
   {
     "org_name": "City of Glenwood Springs",
@@ -132,7 +160,9 @@
     "website": "glenwoodco.gov",
     "boundary_id": "gws_boundary",
     "category_confirmed": true,
-    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Water supply: Grizzly & No Name creeks, some Roaring Fork rights."
+    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Water supply: Grizzly & No Name creeks, some Roaring Fork rights.",
+    "scope": "Municipal water system",
+    "tier": "service_area"
   },
   {
     "org_name": "Town of Basalt",
@@ -141,6 +171,19 @@
     "website": "basalt.net",
     "boundary_id": "basalt_boundary",
     "category_confirmed": true,
-    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Straddles Eagle/Pitkin/Garfield county lines - included since RFWSD/MVMD both serve it."
+    "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Straddles Eagle/Pitkin/Garfield county lines - included since RFWSD/MVMD both serve it.",
+    "scope": "Municipal water system",
+    "tier": "service_area"
+  },
+  {
+    "org_name": "Division of Water Resources (DWR)",
+    "org_short": "DWR",
+    "category": "Governance & Policy",
+    "website": "dwr.colorado.gov",
+    "boundary_id": "huc8_roaring_fork",
+    "category_confirmed": false,
+    "caveat": "Water District 38 covers the Roaring Fork watershed, administered by two water commissioners split near Emma - one covering Emma upstream (the Aspen and Basalt side), one covering Emma downstream (the Carbondale and El Jebel side, including the Crystal River). No official map of that split exists; DWR describes it narratively. Not drawn as polygons - see scripts/build_dwr_areas.py, which can reconstruct them from subwatersheds if ever needed. Commissioner names omitted pending confirmation from Gwen.",
+    "scope": "Roaring Fork watershed - Water District 38, split near Emma",
+    "tier": "watershed"
   }
 ]

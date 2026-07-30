@@ -22,6 +22,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kameron:wght@600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet" />
 
+  <script>
+    // Detect being inside an iframe before first paint, so embedded chrome
+    // never flashes. The host page supplies its own heading and context, and
+    // an iframe's height is scarce - repeating the title and footer here cost
+    // ~85px of a 460px frame and duplicated what the page already said.
+    if (window.self !== window.top) {
+      document.documentElement.classList.add('is-embedded');
+    }
+  </script>
+
   <style>
     /*
       Palette pulled directly from pitkincountyrivers.com (7/28/26):
@@ -93,6 +103,17 @@
       width: 100%;
       height: min(520px, 65vh);
       min-height: 320px;
+    }
+
+    /* Embedded: drop the chrome and let the map fill the frame the host gave
+       us. The host page owns the heading, the intro text and the caveats. */
+    .is-embedded header,
+    .is-embedded .map-note {
+      display: none;
+    }
+    .is-embedded #map {
+      height: 100vh;
+      min-height: 0;
     }
 
     /* A visible focus ring on the canvas - without it a keyboard user has no

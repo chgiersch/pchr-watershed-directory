@@ -1389,6 +1389,13 @@
       }
 
       function focusBoundary(boundaryId, { orgShort = null } = {}) {
+        // Anything left open from an earlier map click is now describing a
+        // different shape than the one being highlighted. Dismissed quietly:
+        // a real close would run the close hook, which clears the selection
+        // this is about to set, and would pull focus back to the map canvas
+        // and away from the directory entry the reader is on.
+        dismissPopupQuietly();
+
         // The watershed-wide and statewide orgs all point at the watershed
         // itself, which isn't drawn as a service area. Rather than doing
         // nothing, light up the watershed outline and frame it - that IS their

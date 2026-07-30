@@ -128,21 +128,17 @@
       * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
 
-    /* Height is capped against the viewport rather than a fixed pixel value,
-       so the popup can never be taller than the map showing it - in a short
-       iframe a fixed 420px would overflow the frame entirely. Anything longer
-       scrolls inside the popup. The anchor logic in anchorFor() handles the
-       horizontal side; this handles the vertical. */
+    /* max-height here is only a starting value. fitPopupInMap() overrides it
+       inline as soon as the popup is in the DOM, using the map's measured
+       height and the room actually available above and below the click - a
+       CSS-only cap can't know either. This value keeps the popup sane for the
+       frame before that runs, and if the script ever fails. */
     .maplibregl-popup-content {
       font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 14px;
       padding: 14px 16px;
       border-radius: 8px;
       max-width: 420px;
-      /* 72vh rather than the full frame: a side-anchored popup is centred on
-         the click, so it needs roughly half its height of room above and below.
-         Capping it here means a centred popup still fits for any click outside
-         the narrow edge band, and taller content scrolls inside. */
       max-height: 72vh;
       overflow-y: auto;
       overscroll-behavior: contain;   /* scrolling the popup shouldn't pan the map */
@@ -434,29 +430,89 @@
   // when it isn't a replacement.
   let replacingPopup = false;
 
-  // Which part of the popup attaches to the clicked point.
-  //
-  // MapLibre's own auto-anchoring assumes a small popup; ours has three
-  // sections and can be taller than the map in a short iframe, and left alone
-  // it runs off the edge. So the side is chosen explicitly: 'left' puts the
-  // popup's left edge at the point and the body extends right, so a click on
-  // the left half wants 'left'.
-  //
-  // Vertically the plain side anchors centre the popup on the click, which is
-  // what you want almost everywhere. Corner anchors are only for clicks close
-  // enough to the top or bottom that a centred popup would be cut off by the
-  // frame - EDGE_BAND is deliberately narrow, because a corner anchor drops
-  // the popup below the click and that reads as misaligned anywhere it isn't
-  // strictly necessary.
-  const EDGE_BAND = 0.15;
+  // Two different distances, which were previously conflated into one - the
+  // reason the popup still touched the frame. GAP is how far the popup sits
+  // from the click; MARGIN is the clearance it keeps from the edge of the map.
+  const POPUP_GAP = 12;
+  const POPUP_MARGIN = 16;
+  const POPUP_MIN_H = 160;   // below this, scrolling is worse than overflowing
 
-  function anchorFor(lngLat) {
-    const p = map.project(lngLat);
-    const { width, height } = map.getCanvas().getBoundingClientRect();
-    const side = p.x < width / 2 ? 'left' : 'right';
-    if (p.y < height * EDGE_BAND) return 'top-' + side;
-    if (p.y > height * (1 - EDGE_BAND)) return 'bottom-' + side;
-    return side;
+  // Which side of the click the popup opens on. Horizontal only - the vertical
+  // half can't be decided until the popup has been measured.
+  function sideFor(lngLat) {
+    return map.project(lngLat).x < map.getCanvas().getBoundingClientRect().width / 2
+      ? 'left' : 'right';
+  }
+
+  // Keep the popup inside the map, whatever its height turns out to be.
+  //
+  // The previous version picked an anchor from where the click landed - a
+  // narrow band at the top and bottom got a corner anchor, everything else was
+  // centred. That can't be made to work, because the right anchor depends on
+  // the popup's height as much as the click's position: the same click needs
+  // one answer for a two-line popup and another for one listing a dozen
+  // organizations. Clicks below the band still overflowed.
+  //
+  // So the popup is measured once it's in the DOM, and then corrected. Two
+  // things keep it inside the frame:
+  //
+  //   - the anchor flips to hang below or sit above the click when a centred
+  //     popup wouldn't fit
+  //   - the content is capped to the map's height and scrolls internally, so a
+  //     popup that fits nowhere still can't escape
+  //
+  // This runs synchronously right after addTo(), before the browser paints, so
+  // the correction is never visible as a jump.
+  function fitPopupInMap(popup, lngLat) {
+    const el = popup.getElement();
+    const content = el && el.querySelector('.maplibregl-popup-content');
+    if (!content) return;
+
+    const canvas = map.getCanvas().getBoundingClientRect();
+    const point = map.project(lngLat);
+    const side = sideFor(lngLat);
+
+    // Cap before measuring - the cap can itself change the height.
+    content.style.maxHeight =
+      Math.max(POPUP_MIN_H, canvas.height - POPUP_MARGIN * 2) + 'px';
+    // Same guarantee sideways. A side-anchored popup extends away from the
+    // click, so the room it has is whatever lies between the click and the
+    // far edge - which on a narrow map is less than the 420px it would
+    // otherwise take.
+    content.style.maxWidth = Math.round(Math.min(420, side === 'left'
+      ? canvas.width - point.x - POPUP_GAP - POPUP_MARGIN
+      : point.x - POPUP_GAP - POPUP_MARGIN)) + 'px';
+
+    const height = el.getBoundingClientRect().height;
+
+    // A centred anchor puts half the popup either side of the click, and adds
+    // no vertical offset. A corner anchor hangs the whole popup off the click,
+    // GAP away from it. Different arithmetic, so both are spelled out.
+    const centreAbove = point.y - POPUP_MARGIN;
+    const centreBelow = canvas.height - point.y - POPUP_MARGIN;
+    const hangRoom = canvas.height - point.y - POPUP_GAP - POPUP_MARGIN;
+    const riseRoom = point.y - POPUP_GAP - POPUP_MARGIN;
+
+    let anchor;
+    if (height / 2 <= centreAbove && height / 2 <= centreBelow) {
+      anchor = side;                    // centred on the click - the common case
+    } else if (height <= hangRoom) {
+      anchor = 'top-' + side;           // top edge at the click, body below
+    } else if (height <= riseRoom) {
+      anchor = 'bottom-' + side;        // bottom edge at the click, body above
+    } else {
+      // Taller than either direction can take. Use the roomier one and let the
+      // content scroll within it.
+      anchor = hangRoom >= riseRoom ? 'top-' + side : 'bottom-' + side;
+      content.style.maxHeight =
+        Math.max(POPUP_MIN_H, hangRoom, riseRoom) + 'px';
+    }
+
+    if (anchor === popup.options.anchor) return;
+    // There's no public setter for the anchor, and setLngLat is what triggers
+    // the reposition that reads it.
+    popup.options.anchor = anchor;
+    popup.setLngLat(lngLat);
   }
 
   function openPopup(lngLat, html) {
@@ -466,9 +522,9 @@
       replacingPopup = false;
     }
     activePopup = new maplibregl.Popup({
-      offset: 12,
+      offset: POPUP_GAP,
       maxWidth: '420px',
-      anchor: anchorFor(lngLat),
+      anchor: sideFor(lngLat),
       // The click handler owns the popup lifecycle. Left at the default true,
       // MapLibre closes the popup on any map click, racing our own handler.
       closeOnClick: false
@@ -476,6 +532,8 @@
       .setLngLat(lngLat)
       .setHTML(html)
       .addTo(map);
+
+    fitPopupInMap(activePopup, lngLat);
 
     const el = activePopup.getElement();
     const content = el.querySelector('.maplibregl-popup-content');

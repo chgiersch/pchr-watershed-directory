@@ -22,6 +22,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kameron:wght@600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet" />
 
+  <script>
+    // Detect being inside an iframe before first paint, so embedded chrome
+    // never flashes. The host page supplies its own heading and context, and
+    // an iframe's height is scarce - repeating the title and footer here cost
+    // ~85px of a 460px frame and duplicated what the page already said.
+    if (window.self !== window.top) {
+      document.documentElement.classList.add('is-embedded');
+    }
+  </script>
+
   <style>
     /*
       Palette pulled directly from pitkincountyrivers.com (7/28/26):
@@ -95,6 +105,17 @@
       min-height: 320px;
     }
 
+    /* Embedded: drop the chrome and let the map fill the frame the host gave
+       us. The host page owns the heading, the intro text and the caveats. */
+    .is-embedded header,
+    .is-embedded .map-note {
+      display: none;
+    }
+    .is-embedded #map {
+      height: 100vh;
+      min-height: 0;
+    }
+
     /* A visible focus ring on the canvas - without it a keyboard user has no
        idea the map is focused and that the bracket keys will do anything. */
     #map canvas:focus-visible,
@@ -107,14 +128,20 @@
       * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
 
+    /* max-height here is only a starting value. fitPopupInMap() overrides it
+       inline as soon as the popup is in the DOM, using the map's measured
+       height and the room actually available above and below the click - a
+       CSS-only cap can't know either. This value keeps the popup sane for the
+       frame before that runs, and if the script ever fails. */
     .maplibregl-popup-content {
       font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 14px;
       padding: 14px 16px;
       border-radius: 8px;
       max-width: 420px;
-      max-height: min(70vh, 420px);
+      max-height: 72vh;
       overflow-y: auto;
+      overscroll-behavior: contain;   /* scrolling the popup shouldn't pan the map */
       box-shadow: 0 4px 16px rgba(0,0,0,0.15);
     }
 
@@ -165,6 +192,69 @@
       margin-top: 10px;
       padding-top: 10px;
       border-top: 1px solid #e8e8e8;
+    }
+
+    /* When embedded, each org is a button that scrolls the host page's
+       directory to that entry. Styled to read as a row you can act on rather
+       than as a chunky button - it sits inside a dense list, and 19 obvious
+       buttons would be visual noise. */
+    .popup-org-block--link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      /* Negative margin plus matching padding lets the hover state bleed to
+         the popup's edges, so the whole row reads as one target. */
+      width: calc(100% + 16px);
+      margin-left: -8px;
+      margin-right: -8px;
+      padding: 6px 8px;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+      background: none;
+      border: 0;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .popup-org-block--link:hover,
+    .popup-org-block--link:focus-visible {
+      background: #eef7fd;
+    }
+    .popup-org-block--link:focus-visible {
+      outline: 2px solid var(--sky);
+      outline-offset: 0;
+    }
+    .popup-org-block--link .popup-org-name,
+    .popup-org-block--link .popup-scope {
+      display: block;
+    }
+
+    /* Text column on the left, jump icon pinned right. */
+    .popup-org-block--link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .popup-org-text { flex: 1 1 auto; min-width: 0; }
+    .popup-org-block--link .popup-org-name { margin-bottom: 2px; }
+    .popup-org-block--link .popup-scope { margin-bottom: 0; }
+
+    /* Revealed on hover/focus only - nineteen persistent icons would compete
+       with the org names, and the row is the click target regardless. */
+    .popup-org-cue {
+      flex: 0 0 auto;
+      width: 15px;
+      height: 15px;
+      color: var(--sky);
+      opacity: 0;
+      transition: opacity 0.12s ease;
+    }
+    .popup-org-block--link:hover .popup-org-cue,
+    .popup-org-block--link:focus-visible .popup-org-cue {
+      opacity: 1;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .popup-org-cue { transition: none; }
     }
 
     /* Sections run from most specific to least: what's at this point, then
@@ -340,6 +430,91 @@
   // when it isn't a replacement.
   let replacingPopup = false;
 
+  // Two different distances, which were previously conflated into one - the
+  // reason the popup still touched the frame. GAP is how far the popup sits
+  // from the click; MARGIN is the clearance it keeps from the edge of the map.
+  const POPUP_GAP = 12;
+  const POPUP_MARGIN = 16;
+  const POPUP_MIN_H = 160;   // below this, scrolling is worse than overflowing
+
+  // Which side of the click the popup opens on. Horizontal only - the vertical
+  // half can't be decided until the popup has been measured.
+  function sideFor(lngLat) {
+    return map.project(lngLat).x < map.getCanvas().getBoundingClientRect().width / 2
+      ? 'left' : 'right';
+  }
+
+  // Keep the popup inside the map, whatever its height turns out to be.
+  //
+  // The previous version picked an anchor from where the click landed - a
+  // narrow band at the top and bottom got a corner anchor, everything else was
+  // centred. That can't be made to work, because the right anchor depends on
+  // the popup's height as much as the click's position: the same click needs
+  // one answer for a two-line popup and another for one listing a dozen
+  // organizations. Clicks below the band still overflowed.
+  //
+  // So the popup is measured once it's in the DOM, and then corrected. Two
+  // things keep it inside the frame:
+  //
+  //   - the anchor flips to hang below or sit above the click when a centred
+  //     popup wouldn't fit
+  //   - the content is capped to the map's height and scrolls internally, so a
+  //     popup that fits nowhere still can't escape
+  //
+  // This runs synchronously right after addTo(), before the browser paints, so
+  // the correction is never visible as a jump.
+  function fitPopupInMap(popup, lngLat) {
+    const el = popup.getElement();
+    const content = el && el.querySelector('.maplibregl-popup-content');
+    if (!content) return;
+
+    const canvas = map.getCanvas().getBoundingClientRect();
+    const point = map.project(lngLat);
+    const side = sideFor(lngLat);
+
+    // Cap before measuring - the cap can itself change the height.
+    content.style.maxHeight =
+      Math.max(POPUP_MIN_H, canvas.height - POPUP_MARGIN * 2) + 'px';
+    // Same guarantee sideways. A side-anchored popup extends away from the
+    // click, so the room it has is whatever lies between the click and the
+    // far edge - which on a narrow map is less than the 420px it would
+    // otherwise take.
+    content.style.maxWidth = Math.round(Math.min(420, side === 'left'
+      ? canvas.width - point.x - POPUP_GAP - POPUP_MARGIN
+      : point.x - POPUP_GAP - POPUP_MARGIN)) + 'px';
+
+    const height = el.getBoundingClientRect().height;
+
+    // A centred anchor puts half the popup either side of the click, and adds
+    // no vertical offset. A corner anchor hangs the whole popup off the click,
+    // GAP away from it. Different arithmetic, so both are spelled out.
+    const centreAbove = point.y - POPUP_MARGIN;
+    const centreBelow = canvas.height - point.y - POPUP_MARGIN;
+    const hangRoom = canvas.height - point.y - POPUP_GAP - POPUP_MARGIN;
+    const riseRoom = point.y - POPUP_GAP - POPUP_MARGIN;
+
+    let anchor;
+    if (height / 2 <= centreAbove && height / 2 <= centreBelow) {
+      anchor = side;                    // centred on the click - the common case
+    } else if (height <= hangRoom) {
+      anchor = 'top-' + side;           // top edge at the click, body below
+    } else if (height <= riseRoom) {
+      anchor = 'bottom-' + side;        // bottom edge at the click, body above
+    } else {
+      // Taller than either direction can take. Use the roomier one and let the
+      // content scroll within it.
+      anchor = hangRoom >= riseRoom ? 'top-' + side : 'bottom-' + side;
+      content.style.maxHeight =
+        Math.max(POPUP_MIN_H, hangRoom, riseRoom) + 'px';
+    }
+
+    if (anchor === popup.options.anchor) return;
+    // There's no public setter for the anchor, and setLngLat is what triggers
+    // the reposition that reads it.
+    popup.options.anchor = anchor;
+    popup.setLngLat(lngLat);
+  }
+
   function openPopup(lngLat, html) {
     if (activePopup) {
       replacingPopup = true;
@@ -347,8 +522,9 @@
       replacingPopup = false;
     }
     activePopup = new maplibregl.Popup({
-      offset: 12,
+      offset: POPUP_GAP,
       maxWidth: '420px',
+      anchor: sideFor(lngLat),
       // The click handler owns the popup lifecycle. Left at the default true,
       // MapLibre closes the popup on any map click, racing our own handler.
       closeOnClick: false
@@ -356,6 +532,8 @@
       .setLngLat(lngLat)
       .setHTML(html)
       .addTo(map);
+
+    fitPopupInMap(activePopup, lngLat);
 
     const el = activePopup.getElement();
     const content = el.querySelector('.maplibregl-popup-content');
@@ -417,13 +595,6 @@
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => fitToWatershed(), 150);
-  });
-
-  // Temporary diagnostic logging - surfaces any style/source error to the
-  // console immediately, since MapLibre can fire 'error' synchronously
-  // during style validation, before any later-attached listener could catch it.
-  map.on('error', (e) => {
-    console.error('MAPLIBRE ERROR:', e.error ? (e.error.message || e.error) : e, e);
   });
 
   // Navigation controls
@@ -591,6 +762,28 @@
       // scale) - those orgs get no polygon of their own, so selecting them
       // in the directory lights up this outline instead.
       map.addSource('watershed', { type: 'geojson', data: watershed });
+
+      // Same reason as the org labels: MapLibre tiles a GeoJSON source and
+      // places one label per polygon PER TILE, so this shape - which spans
+      // several tiles at every usable zoom - can render its name more than
+      // once. Collision detection happens to suppress the second copy at the
+      // default view, but that's luck, not a guarantee. Labelling a single
+      // precomputed point removes the possibility.
+      map.addSource('watershed-label-point', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'Point',
+            coordinates: [
+              watershed.properties.label_lon,
+              watershed.properties.label_lat
+            ]
+          }
+        }
+      });
+
       map.addLayer({
         id: 'watershed-outline',
         type: 'line',
@@ -601,14 +794,40 @@
           'line-opacity': 0.55
         }
       });
-      // Sits invisible until a watershed-wide org is selected from the directory.
+      // Never drawn - this exists purely as a click target, so that a click
+      // anywhere inside the basin (including the gaps between service areas)
+      // still surfaces the watershed-wide and statewide orgs in the popup.
+      // The visible watershed-wide highlight is 'watershed-hatch' below.
       map.addLayer({
         id: 'watershed-highlight',
         type: 'fill',
         source: 'watershed',
+        paint: { 'fill-opacity': 0 }
+      });
+
+      // Names the watershed when it's the thing highlighted. Hidden by default:
+      // the ten service-area labels carry the map the rest of the time, and this
+      // one sits mid-basin where it would collide with BWCD's. The text is set
+      // at highlight time because it differs by org - a watershed-wide body gets
+      // the plain name, a statewide one gets a note that this is only part of
+      // its area.
+      map.addLayer({
+        id: 'watershed-label',
+        type: 'symbol',
+        source: 'watershed-label-point',
+        layout: {
+          visibility: 'none',
+          'text-field': 'Roaring Fork Watershed',
+          'text-font': ['Noto Sans Medium'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 8, 14, 12, 17],
+          'text-max-width': 12,
+          'text-line-height': 1.3,
+          'text-letter-spacing': 0.01
+        },
         paint: {
-          'fill-color': rootStyle.getPropertyValue('--sky').trim(),
-          'fill-opacity': 0
+          'text-color': rootStyle.getPropertyValue('--navy').trim(),
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2.5
         }
       });
 
@@ -803,10 +1022,106 @@
         }
       }, 'org-label');
 
+      // ---- Watershed-wide emphasis ----
+      // Statewide, basin-wide and watershed-wide bodies have no service area of
+      // their own, so selecting one highlights the whole basin. A flat blue
+      // tint wasn't enough: with ten colored service areas and the river
+      // network underneath, a wash just reads as more map. This lays a hatched
+      // grey veil over the entire watershed and thickens its edge to black,
+      // which reads unambiguously as "all of this" - and carries the state in
+      // texture rather than color alone, which is what WCAG 1.4.1 asks for.
+      //
+      // Both layers sit at the top of the fill/line stack so they cover the org
+      // shapes. Symbol layers render in a later pass regardless of order, so
+      // the watershed label still sits on top of the hatch.
+      const HATCH_TILE = 8;                        // CSS px between lines
+      const HATCH_DPR  = 2;                        // drawn at 2x for retina
+      const HATCH_VEIL = 'rgba(70, 82, 92, 0.26)'; // the grey wash
+      const HATCH_LINE = 'rgba(0, 46, 76, 0.38)';  // navy, matching the theme
+
+      // MapLibre has no built-in hatch, so the pattern is drawn once to a
+      // canvas and registered as a sprite image. Both the wash and the lines
+      // are baked into the tile with their own alpha - that way each can be
+      // tuned independently, which a single fill-opacity on the layer couldn't
+      // do since it would fade them together.
+      function buildHatchImage() {
+        const c = document.createElement('canvas');
+        c.width = c.height = HATCH_TILE * HATCH_DPR;
+        const ctx = c.getContext('2d');
+        ctx.scale(HATCH_DPR, HATCH_DPR);
+
+        ctx.fillStyle = HATCH_VEIL;
+        ctx.fillRect(0, 0, HATCH_TILE, HATCH_TILE);
+
+        ctx.strokeStyle = HATCH_LINE;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // One diagonal only. Drawn three times - one tile up, in place, one
+        // tile down - so the stroke isn't clipped at the corners and
+        // neighbouring tiles join without a visible seam.
+        for (const off of [-HATCH_TILE, 0, HATCH_TILE]) {
+          ctx.moveTo(-1, off - 1);
+          ctx.lineTo(HATCH_TILE + 1, off + HATCH_TILE + 1);
+        }
+        ctx.stroke();
+
+        return {
+          width: c.width,
+          height: c.height,
+          data: ctx.getImageData(0, 0, c.width, c.height).data
+        };
+      }
+
+      if (!map.hasImage('watershed-hatch')) {
+        map.addImage('watershed-hatch', buildHatchImage(), { pixelRatio: HATCH_DPR });
+      }
+
+      map.addLayer({
+        id: 'watershed-hatch',
+        type: 'fill',
+        source: 'watershed',
+        layout: { visibility: 'none' },
+        paint: { 'fill-pattern': 'watershed-hatch' }
+      });
+
+      map.addLayer({
+        id: 'watershed-emphasis',
+        type: 'line',
+        source: 'watershed',
+        layout: { visibility: 'none', 'line-join': 'round' },
+        paint: {
+          'line-color': '#000000',
+          'line-width': 2.5,
+          'line-opacity': 0.85
+        }
+      });
+
+      // The watershed name has to sit above its own hatch to stay readable, and
+      // MapLibre draws symbol layers in style order like any other layer - not
+      // in a later pass. 'watershed-label' was added early, next to the other
+      // watershed layers, so the hatch was painting over it. Rather than move
+      // the layer's definition away from the ones it belongs with, lift it to
+      // the top of the stack here, once its coverers exist.
+      map.moveLayer('watershed-label');
+
+      function setWatershedEmphasis(on) {
+        const visibility = on ? 'visible' : 'none';
+        ['watershed-hatch', 'watershed-emphasis'].forEach(id => {
+          if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility);
+        });
+      }
+
       let selectedIds = [];
 
       function setSelection(ids) {
         selectedIds = ids;
+        // Any service-area selection cancels a watershed-wide highlight -
+        // otherwise both stay lit and it's unclear what's actually selected.
+        setWatershedEmphasis(false);
+        if (map.getLayer('watershed-label')) {
+          map.setLayoutProperty('watershed-label', 'visibility', 'none');
+          map.setLayoutProperty('org-label', 'visibility', 'visible');
+        }
         if (!ids.length) {
           map.setPaintProperty('org-fill', 'fill-opacity', BASE_FILL);
           map.setFilter('org-selected', ['==', ['get', 'boundary_id'], '__none__']);
@@ -829,16 +1144,44 @@
       // live out here - they were originally inside the click callback, which
       // silently broke Enter-to-open on the keyboard path.
 
-      // Just the name and the area it covers. The category chips ("Water
-      // Providers", "Governance & Policy") classified without informing once
-      // the legend was gone, and website links live in the directory entry -
-      // the popup's job is orientation, not the full record.
-      const orgBlock = org => `
-        <div class="popup-org-block">
-          <div class="popup-org-name">${org.org_name}</div>
-          ${org.scope ? `<div class="popup-scope">${org.scope}</div>` : ''}
-        </div>
-      `;
+      // Name plus the area it covers. Category chips were dropped when the
+      // legend went - they classified without informing - and website links
+      // live in the directory entry; the popup's job is orientation.
+      //
+      // When embedded, each org is a button that asks the host page to scroll
+      // its directory entry into view. A button rather than a link because it
+      // acts on this page's sibling rather than navigating anywhere, and it's
+      // keyboard operable for free. Standalone there's no directory to scroll
+      // to, so it renders as plain text instead of a control that does nothing.
+      const embedded = window.self !== window.top;
+
+      // A bare chevron, deliberately with no line beneath it - an arrow above a
+      // horizontal line is the download icon, and that's exactly what the first
+      // version read as. Without the line it just means "further down".
+      //
+      // aria-hidden because the visually-hidden text carries the action: the
+      // button's accessible name would otherwise be only the org name, giving
+      // no hint that activating it goes anywhere.
+      const JUMP_ICON = `
+        <svg class="popup-org-cue" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+
+      const orgBlock = org => embedded
+        ? `<button type="button" class="popup-org-block popup-org-block--link"
+                   data-org="${org.org_short}">
+             <span class="popup-org-text">
+               <span class="popup-org-name">${org.org_name}</span>
+               ${org.scope ? `<span class="popup-scope">${org.scope}</span>` : ''}
+             </span>
+             ${JUMP_ICON}
+             <span class="sr-only">- see full entry below</span>
+           </button>`
+        : `<div class="popup-org-block">
+             <div class="popup-org-name">${org.org_name}</div>
+             ${org.scope ? `<div class="popup-scope">${org.scope}</div>` : ''}
+           </div>`;
 
       const section = (label, list) => list.length ? `
         <div class="popup-section">
@@ -850,17 +1193,29 @@
       const watershedOrgs = orgs.filter(o => o.tier === 'watershed');
       const regionalOrgs  = orgs.filter(o => o.tier === 'regional');
 
-      // Local orgs first, then the two standing tiers underneath.
-      function buildPopupHtml(localOrgs, extraHtml = '') {
+      // Three tiers, narrowing to widening: the shape you actually clicked,
+      // then the watershed, then basin and state. `boundary` is the properties
+      // of the highlighted polygon, or null when the click landed on open
+      // ground inside the watershed.
+      function buildPopupHtml(boundary, localOrgs, extraHtml = '') {
+        // A named watershed says so in the heading - "Highlighted extent"
+        // alone doesn't tell you the Crystal River is what's lit up. Only
+        // shapes carrying a HUC code are watersheds; the rest are districts
+        // and municipalities whose name is already the org name below.
+        let extentLabel = 'Highlighted extent';
+        if (boundary && boundary.huc_code && boundary.label) {
+          extentLabel += ` &middot; ${boundary.label}`;
+        }
+
         return [
           `<div class="popup-section">
-             <div class="popup-section-label">Here</div>
+             <div class="popup-section-label">${extentLabel}</div>
              ${localOrgs.length
                ? localOrgs.map(orgBlock).join('') + extraHtml
                : '<div class="popup-desc">No specific service area covers this point.</div>'}
            </div>`,
-          section('Across the Roaring Fork watershed', watershedOrgs),
-          section('Basin and statewide', regionalOrgs)
+          section('Roaring Fork watershed wide', watershedOrgs),
+          section('State or basin wide', regionalOrgs)
         ].join('');
       }
 
@@ -924,7 +1279,194 @@
           .sort((a, b) => a[1].areasqkm - b[1].areasqkm)[0];
         setSelection(smallest ? [smallest[0]] : []);
 
-        openPopup(e.lngLat, buildPopupHtml(localOrgs, crystalHtml));
+        // Tell the host which shape is lit so it can mark the matching entry.
+        // Deliberately does NOT scroll the page - clicking around the map
+        // shouldn't yank the directory about underneath. Scrolling happens
+        // only when someone picks an organization inside the popup.
+        if (smallest) {
+          postToHost({
+            type: 'pchr:selected',
+            boundaryId: smallest[0],
+            orgs: (orgsByBoundary.get(smallest[0]) || []).map(o => o.org_short)
+          });
+        }
+
+        openPopup(
+          e.lngLat,
+          buildPopupHtml(smallest ? smallest[1] : null, localOrgs, crystalHtml)
+        );
+      });
+
+      // Organization buttons inside the popup. Delegated from the map
+      // container because popup markup is created and destroyed constantly -
+      // binding per popup would leak listeners.
+      map.getContainer().addEventListener('click', (ev) => {
+        const btn = ev.target.closest('.popup-org-block--link');
+        if (!btn) return;
+        const orgShort = btn.getAttribute('data-org');
+        if (orgShort) postToHost({ type: 'pchr:showOrg', orgShort });
+      });
+
+      // ---- Messaging with the host page ----
+      //
+      // The directory lives on the WordPress page, outside this iframe, so the
+      // two can only talk via postMessage. Both directions are supported:
+      //
+      //   in   { type: 'pchr:focus', boundaryId, orgShort }  - highlight and fly
+      //        { type: 'pchr:clear' }               - drop the selection
+      //   out  { type: 'pchr:selected', boundaryId, orgs }  - user picked a shape
+      //        { type: 'pchr:ready',    boundaries }        - map is live
+      //
+      // SECURITY: origin is checked on both ends, and it is not optional.
+      // A listener that accepts any origin lets any page that embeds this map
+      // drive it, and posting with '*' would leak our messages to whatever
+      // document happens to be the parent. Add the county's domain here when
+      // the real host is known; localhost and the GitHub Pages origin cover
+      // development and the standalone version.
+      const ALLOWED_ORIGINS = [
+        'https://pitkincountyrivers.com',
+        'https://www.pitkincountyrivers.com',
+        'https://chgiersch.github.io',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000'
+      ];
+
+      const isAllowed = (origin) => ALLOWED_ORIGINS.includes(origin);
+
+      // The parent's origin isn't readable cross-origin, so it's taken from
+      // document.referrer - which the browser sets to the embedding page.
+      let hostOrigin = null;
+      try {
+        if (document.referrer) hostOrigin = new URL(document.referrer).origin;
+      } catch (_) { /* malformed or absent referrer - stay null, send nothing */ }
+
+      function postToHost(payload) {
+        // Only when framed, and only to an origin we recognise. Silence is the
+        // correct behaviour otherwise: no host, or an unexpected one, means
+        // there's nobody we should be talking to.
+        if (window.self === window.top) return;
+        if (!hostOrigin || !isAllowed(hostOrigin)) return;
+        window.parent.postMessage(payload, hostOrigin);
+      }
+
+      window.addEventListener('message', (ev) => {
+        if (!isAllowed(ev.origin)) return;
+        const msg = ev.data;
+        if (!msg || typeof msg !== 'object') return;
+
+        if (msg.type === 'pchr:focus' && msg.boundaryId) {
+          focusBoundary(msg.boundaryId, { orgShort: msg.orgShort });
+        } else if (msg.type === 'pchr:clear') {
+          closePopup();
+          clearSelection();
+        }
+      });
+
+      // Shared by the host message handler and the keyboard path.
+      // Driven from the directory. Zooms and highlights only - no popup. The
+      // reader already has the org's full entry open in front of them, so a
+      // popup would repeat what they're looking at and cover the map doing it.
+      //
+      // orgShort names which of the organizations sharing this boundary was
+      // picked, which matters for the watershed: seven orgs point at it, and
+      // the label differs depending on whether that org's reach stops there.
+      // Extent of a GeoJSON geometry, as fitBounds wants it. Walks the
+      // coordinate tree rather than special-casing Polygon vs MultiPolygon, so
+      // the multi-part districts (RFWSD, Basalt) come out right too.
+      function bboxOf(geometry) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        (function walk(coords) {
+          if (typeof coords[0] === 'number') {
+            if (coords[0] < minX) minX = coords[0];
+            if (coords[0] > maxX) maxX = coords[0];
+            if (coords[1] < minY) minY = coords[1];
+            if (coords[1] > maxY) maxY = coords[1];
+            return;
+          }
+          coords.forEach(walk);
+        })(geometry.coordinates);
+        return [[minX, minY], [maxX, maxY]];
+      }
+
+      function focusBoundary(boundaryId, { orgShort = null } = {}) {
+        // The watershed-wide and statewide orgs all point at the watershed
+        // itself, which isn't drawn as a service area. Rather than doing
+        // nothing, light up the watershed outline and frame it - that IS their
+        // answer to "where do you operate", and it's what the highlight layer
+        // was added for.
+        if (watershed && boundaryId === watershed.properties.boundary_id) {
+          clearSelection();
+
+          // A statewide or basin-wide body operates well past this watershed,
+          // so labelling the highlight with just the watershed name would
+          // claim the wrong extent - the same misrepresentation that got the
+          // basin polygon removed. The second line says so plainly.
+          const org = (orgsByBoundary.get(boundaryId) || [])
+            .find(o => o.org_short === orgShort) || null;
+          const wider = org && org.tier === 'regional';
+
+          map.setLayoutProperty('watershed-label', 'text-field',
+            wider ? 'Roaring Fork Watershed\n(part of a larger area)'
+                  : 'Roaring Fork Watershed');
+          map.setLayoutProperty('watershed-label', 'visibility', 'visible');
+          // Org labels off while the watershed is the subject - otherwise this
+          // label collides with BWCD's mid-basin and it's unclear what's lit.
+          map.setLayoutProperty('org-label', 'visibility', 'none');
+
+          setWatershedEmphasis(true);
+          map.fitBounds(WATERSHED_BOUNDS, {
+            padding: 24,
+            duration: prefersReducedMotion() ? 0 : 600
+          });
+          announce(wider
+            ? 'Roaring Fork watershed highlighted. This organization also operates beyond it.'
+            : 'Roaring Fork watershed highlighted.');
+          return true;
+        }
+
+        const feature = orgShapes.find(f => f.properties.boundary_id === boundaryId);
+        if (!feature) return false;
+        const p = feature.properties;
+
+        // Any previous watershed highlight comes off, and the org labels come
+        // back - setSelection handles the fill, this handles the labels.
+        restoreOrgLabels();
+        setSelection([boundaryId]);
+        // Frame the whole service area, not its label anchor. Centring on the
+        // anchor at a fixed zoom pushed the edges of the larger districts off
+        // screen - the Crystal filled more than the viewport - which defeats
+        // the point of "show me where this is".
+        //
+        // maxZoom stops the small town polygons from flying to street level,
+        // where the shape fills the screen and you lose the valley context that
+        // makes it legible.
+        map.fitBounds(bboxOf(feature.geometry), {
+          padding: 48,
+          maxZoom: 12.5,
+          duration: prefersReducedMotion() ? 0 : 600
+        });
+        // Announce for screen readers - a map that silently pans tells a
+        // non-visual user nothing at all.
+        announce(`${p.label} highlighted.`);
+        return true;
+      }
+
+      // Undo the watershed-wide display state.
+      function restoreOrgLabels() {
+        setWatershedEmphasis(false);
+        if (!map.getLayer('watershed-label')) return;
+        map.setLayoutProperty('watershed-label', 'visibility', 'none');
+        map.setLayoutProperty('org-label', 'visibility', 'visible');
+      }
+
+      // Tell the host what's available, so it can wire up only the rows that
+      // actually have a shape on the map rather than guessing.
+      postToHost({
+        type: 'pchr:ready',
+        boundaries: orgShapes.map(f => ({
+          boundaryId: f.properties.boundary_id,
+          label: f.properties.label
+        }))
       });
 
       // ---- Keyboard access ----
@@ -959,7 +1501,7 @@
         if (cursorIndex < 0) return;
         const p = focusOrder[cursorIndex].properties;
         const localOrgs = orgsByBoundary.get(p.boundary_id) || [];
-        openPopup([p.label_lon, p.label_lat], buildPopupHtml(localOrgs));
+        openPopup([p.label_lon, p.label_lat], buildPopupHtml(p, localOrgs));
       }
 
       map.getCanvas().setAttribute('tabindex', '0');

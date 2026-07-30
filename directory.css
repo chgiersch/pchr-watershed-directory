@@ -1,0 +1,377 @@
+/* Organization directory - Pitkin County Healthy Rivers
+ *
+ * Kept separate from the markup on purpose. When this ports into WordPress the
+ * HTML goes into the page and these rules go into the theme or a custom-CSS
+ * block - two independent moves, so they shouldn't be tangled together.
+ *
+ * Colors are declared as custom properties at the top. If the county theme
+ * already defines its own, delete the :root block and the directory inherits
+ * theirs - that's the intended way to make this match the site rather than
+ * fighting it.
+ *
+ * Contrast: every text/background pair below was checked against WCAG 2.1 AA
+ * (4.5:1 for body text, 3:1 for large). The muted greys are the ones to be
+ * careful with if you darken or lighten the backgrounds.
+ */
+
+:root {
+  --navy: #002e4c;
+  --sky: #0096dc;
+  --leaf: #6ebe64;
+  --ink: #1a1a1a;
+  --muted: #5c6b75;      /* 5.5:1 on white */
+  --rule: #dce4e8;
+  --surface: #f4f7f9;
+  --paper: #ffffff;
+
+  --font-head: 'Kameron', Georgia, serif;
+  --font-body: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --measure: 68ch;       /* comfortable reading width */
+  --gap: 1.5rem;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+/* Keyboard users land here first and can jump straight past the map to the
+   directory. Visible only when focused. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: var(--navy);
+  color: #fff;
+  text-decoration: none;
+}
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+.page-header {
+  background: var(--navy);
+  color: #fff;
+  padding: 1.5rem 1.25rem;
+}
+.page-header h1 {
+  font-family: var(--font-head);
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  margin: 0;
+  line-height: 1.2;
+}
+.page-header p {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+/* ---- Sticky map ---- */
+/* Sticks while the directory scrolls beneath it, so the map stays available
+   without following you as a floating overlay. Height is capped in vh so it
+   can never eat the whole viewport on a short screen or at high zoom. */
+.map-panel {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+
+.map-panel__intro {
+  max-width: var(--measure);
+  margin: 0;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.map-panel__frame {
+  display: block;
+  width: 100%;
+  height: min(52vh, 460px);
+  min-height: 260px;
+  border: 0;
+}
+
+/* Sticky positioning plus a tall map leaves no room to read on a phone, so
+   below this width the map scrolls away normally. */
+@media (max-width: 40rem) {
+  .map-panel { position: static; }
+  .map-panel__frame { height: 44vh; }
+}
+
+/* Respect a user who has asked for less motion - sticky elements that track
+   scrolling are a common trigger. */
+@media (prefers-reduced-motion: reduce) {
+  .map-panel { position: static; }
+}
+
+/* ---- Directory ---- */
+.directory {
+  padding: 2rem 1.25rem 3rem;
+  max-width: 78rem;
+  margin: 0 auto;
+}
+
+.dir-section + .dir-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--rule);
+}
+
+.dir-section__title {
+  font-family: var(--font-head);
+  font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+  color: var(--navy);
+  margin: 0 0 0.5rem;
+  line-height: 1.25;
+}
+
+.dir-section__intro {
+  max-width: var(--measure);
+  margin: 0 0 var(--gap);
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.dir-section__note {
+  max-width: var(--measure);
+  margin: var(--gap) 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Entries stack full width rather than sitting in columns. A disclosure that
+   expands inside a grid cell shoves its neighbours around; stacked, opening one
+   just pushes the rest down predictably. Capped at a readable measure so the
+   expanded prose doesn't run the full width of a desktop screen. */
+.dir-section__list {
+  max-width: 52rem;
+}
+
+.org {
+  border-bottom: 1px solid var(--rule);
+}
+.org:first-of-type {
+  border-top: 1px solid var(--rule);
+}
+
+/* The whole summary row is the click target, so it needs to look like one. */
+.org__summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.9rem 0.25rem;
+  cursor: pointer;
+  list-style: none;          /* hide the default triangle; we draw our own */
+}
+.org__summary::-webkit-details-marker { display: none; }
+
+.org__summary:hover { background: var(--surface); }
+
+/* Custom marker that rotates when open. A triangle rather than +/- because it
+   reads as "expandable" without needing a legend. */
+.org__summary::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: 0.35rem;
+  border-right: 2px solid var(--sky);
+  border-bottom: 2px solid var(--sky);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+.org[open] > .org__summary::before {
+  transform: rotate(45deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .org__summary::before { transition: none; }
+}
+
+/* An <h3> inside the summary, so it's reachable by heading navigation. It
+   becomes the flex row itself and carries the funding flag as a child, since
+   summary can hold one heading OR phrasing content but not both. */
+.org__name {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  font-family: var(--font-head);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.35;
+}
+
+/* Surfaced on the closed row so someone hunting for grant sources can scan
+   rather than opening all nineteen entries. */
+.org__flag {
+  flex: 0 0 auto;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #1c5f2e;            /* 5.9:1 on the pale green below */
+  background: #e6f4ea;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  white-space: nowrap;
+}
+
+.org__body {
+  padding: 0 0.25rem 1.25rem 1.75rem;
+}
+
+/* The service-area line is doing real work: it's the text that carries the
+   map's information for anyone who can't use the map. Styled to read as
+   substance, not as a caption. */
+.org__scope {
+  margin: 0 0 0.625rem;
+  font-size: 0.9375rem;
+}
+
+.org__desc {
+  margin: 0 0 0.875rem;
+  font-size: 0.9375rem;
+  color: #333;
+}
+
+.org__label {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-right: 0.35rem;
+}
+
+.org__mission {
+  margin: 0 0 0.75rem;
+  font-size: 0.9375rem;
+  color: #333;
+}
+
+.org__meta {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+}
+.org__meta-item + .org__meta-item { margin-top: 0.35rem; }
+.org__meta dt { display: inline; }
+.org__meta dd { display: inline; margin: 0; }
+
+/* Action row at the foot of an entry. Wraps rather than scrolls, so it still
+   works at 320px and at 200% zoom (WCAG 1.4.10). */
+.org__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.org__show,
+.org__site {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border-radius: 999px;
+  padding: 0.42rem 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Solid, because this is the primary action in an entry - the one thing that
+   connects the text back to the map. The website is secondary and outlined. */
+.org__show {
+  color: #fff;
+  background: var(--navy);
+  border: 1.5px solid var(--navy);
+}
+.org__show:hover { background: #00405f; border-color: #00405f; }
+
+.org__show-icon {
+  width: 0.95em;
+  height: 0.95em;
+  flex: 0 0 auto;
+}
+
+.org__site {
+  color: var(--navy);
+  background: transparent;
+  border: 1.5px solid var(--navy);
+}
+.org__site:hover,
+.org__site:focus-visible {
+  background: var(--navy);
+  color: #fff;
+}
+
+/* A focus ring in the navy on navy button would vanish, so the offset pushes
+   it clear of the fill. */
+.org__show:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 2px;
+}
+
+/* Visible focus everywhere. Never remove this without replacing it - it's the
+   only way a keyboard user can tell where they are. */
+a:focus-visible,
+.org:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 2px;
+}
+
+/* Jumping here from the map moves focus to the summary, which is necessary so
+   keyboard and screen reader users land where the page just scrolled. But for
+   a mouse user that painted a heavy ring around the title on top of the
+   selected-entry highlight, which read as two competing states.
+   :focus-visible resolves it: the browser shows the ring for keyboard focus
+   and suppresses it for pointer focus. The :focus rule below is only to clear
+   the UA default in the pointer case - the ring itself is never removed for
+   keyboard users, which would fail WCAG 2.4.7. */
+.org__summary:focus { outline: none; }
+.org__summary:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: -3px;
+  border-radius: 3px;
+}
+
+/* Set by the map when an organization's shape is selected, once the
+   postMessage wiring lands. Uses a left bar plus a background shift rather
+   than color alone, so it doesn't rely on color perception. */
+.org.is-selected {
+  border-color: var(--sky);
+  box-shadow: inset 4px 0 0 var(--sky);
+  background: #eef7fd;
+}
+
+.page-footer {
+  border-top: 1px solid var(--rule);
+  padding: 1.5rem 1.25rem 2.5rem;
+}
+.page-footer p {
+  max-width: var(--measure);
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}

@@ -7,8 +7,12 @@ _working/
 # Python virtual environment for the data scripts. Machine- and
 # version-specific (~60MB of compiled wheels) - recreate with:
 #   python3 -m venv .venv && source .venv/bin/activate
-#   pip install geopandas requests
+#   pip install -r requirements.txt
 .venv/
+
+# Scratch output from the basemap extraction steps in the README. The PMTiles
+# archives that ship live in data/basemap/; this is where they're built.
+build/
 __pycache__/
 *.pyc
 

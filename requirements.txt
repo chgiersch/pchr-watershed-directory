@@ -1,0 +1,26 @@
+# Dependencies for the data pipeline in scripts/.
+#
+# The map needs none of this. index.html is a static file that fetches its
+# GeoJSON at runtime, so serving the repo is enough to run the site - these
+# are only required to regenerate or re-fetch the data.
+#
+#   pip install -r requirements.txt
+
+# Reading, reprojecting and clipping boundary geometry. The slow one: it binds
+# to GDAL, GEOS and PROJ. If the wheel won't build, install those first
+# (brew install gdal geos proj on macOS) and retry.
+geopandas>=1.0
+
+# Geometry operations - validity repair, clipping, label anchors. Comes in as
+# a geopandas dependency but is imported directly, so it's pinned here too.
+shapely>=2.0
+
+# Attribute table handling in the boundary scripts.
+pandas>=2.0
+
+# Pulling boundaries from the DOLA and USGS REST services.
+requests>=2.31
+
+# Local dev server. Python's built-in http.server ignores Range headers, which
+# the PMTiles basemap depends on - see the README's local testing note.
+RangeHTTPServer>=1.4

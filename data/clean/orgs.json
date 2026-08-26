@@ -29,12 +29,12 @@
     "website": "bwcd.org",
     "boundary_id": "bwcd_boundary",
     "category_confirmed": true,
-    "caveat": "Service area boundary. Provided by Eric Mangeot (Sphero Environmental) via KML export, 7/9/26."
+    "caveat": "Boundary from the Colorado conservancy districts shapefile provided by Gwen Garcelon, 8/26/26 (source layer dated 11/2014). Replaces a 7/9/26 KML from Eric Mangeot (Sphero Environmental) that described itself as a general perimeter and covered 2,919 km2 - 77% of the watershed - against 519 km2 here."
   },
   {
     "org_name": "Roaring Fork Conservancy",
     "org_short": "RFC",
-    "section": "Watershed organizations",
+    "section": "Local watershed organizations",
     "category": "Conservation & Advocacy",
     "tier": "watershed",
     "scope": "Roaring Fork watershed",
@@ -50,7 +50,7 @@
   {
     "org_name": "RWAPA",
     "org_short": "RWAPA",
-    "section": "Watershed organizations",
+    "section": "Local watershed organizations",
     "category": "Governance & Policy",
     "tier": "watershed",
     "scope": "Roaring Fork watershed",
@@ -66,7 +66,7 @@
   {
     "org_name": "Pitkin County Healthy Rivers",
     "org_short": "PCHR",
-    "section": "Watershed organizations",
+    "section": "Local watershed organizations",
     "category": "Governance & Policy",
     "tier": "watershed",
     "scope": "Roaring Fork watershed",
@@ -82,7 +82,7 @@
   {
     "org_name": "CVEPA (Crystal Valley Environmental Protection Association)",
     "org_short": "CVEPA",
-    "section": "Watershed organizations",
+    "section": "Local watershed organizations",
     "category": "Conservation & Advocacy",
     "tier": "service_area",
     "scope": "Crystal River watershed",
@@ -98,7 +98,7 @@
   {
     "org_name": "Colorado Basin Roundtable",
     "org_short": "CBRT",
-    "section": "Statewide and basin-wide organizations",
+    "section": "Basin and statewide organizations",
     "category": "Governance & Policy",
     "tier": "regional",
     "scope": "Colorado River Basin",
@@ -114,7 +114,7 @@
   {
     "org_name": "Colorado Water Conservation Board",
     "org_short": "CWCB",
-    "section": "Statewide and basin-wide organizations",
+    "section": "Basin and statewide organizations",
     "category": "Governance & Policy",
     "tier": "regional",
     "scope": "Statewide",
@@ -130,7 +130,7 @@
   {
     "org_name": "Colorado River District",
     "org_short": "CRD",
-    "section": "Statewide and basin-wide organizations",
+    "section": "Basin and statewide organizations",
     "category": "Governance & Policy",
     "tier": "regional",
     "scope": "15 West Slope counties",
@@ -258,7 +258,7 @@
   {
     "org_name": "Division of Water Resources (DWR)",
     "org_short": "DWR",
-    "section": "Statewide and basin-wide organizations",
+    "section": "Basin and statewide organizations",
     "category": "Governance & Policy",
     "tier": "watershed",
     "scope": "Roaring Fork watershed - Water District 38, split near Emma",

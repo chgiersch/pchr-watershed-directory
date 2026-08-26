@@ -1,22 +1,143 @@
-# PCHR Watershed Directory Map – Project Structure
+# PCHR Watershed Directory Map
+
+An interactive map and text directory of the organizations that manage water in the Roaring Fork
+watershed, built for Pitkin County Healthy Rivers.
+
+## Live site
+
+**https://chgiersch.github.io/pchr-watershed-directory/**
+
+Published by GitHub Pages from the **`main`** branch, root folder. Every merge into `main` triggers
+a rebuild - watch it under the repo's Actions tab.
+
+`main` is deliberately not where work happens. It only ever receives merges from `release/*` or
+`hotfix/*` branches, so whatever is live corresponds to a tagged version you can roll back to. Day
+to day work lands on `dev`. See CONTRIBUTING notes in `.github/PULL_REQUEST_TEMPLATE.md`.
+
+Two pages are served:
+
+| Path | What it is |
+|---|---|
+| `/` (`index.html`) | The map alone. This is what gets embedded in an iframe. |
+| `/directory.html` | The prototype host page - map plus directory, showing how the two link together. |
+
+The directory is destined for the county's WordPress site, not for Pages. `directory.html` exists
+so the linkage can be developed and reviewed before that handoff.
+
+## Getting started
+
+The map itself needs no build step - `index.html` is a static file that loads its data at runtime.
+You only need Python for the data pipeline in `scripts/`.
+
+```bash
+git clone git@github.com:chgiersch/pchr-watershed-directory.git
+cd pchr-watershed-directory
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+The clone pulls about 58 MB, most of it the PMTiles basemap archives, so it isn't instant.
+
+`geopandas` is the slow install - it binds to GDAL, GEOS and PROJ, and pip has to fetch those
+wheels. If it fails to build, install those libraries first (`brew install gdal geos proj` on
+macOS) and retry.
+
+### Running it locally
+
+```bash
+python3 -m RangeHTTPServer 8000
+```
+
+Then open **http://localhost:8000/directory.html**.
+
+Two things about that command that are not interchangeable with the obvious alternative:
+
+**Use `RangeHTTPServer`, not `python3 -m http.server`.** The basemap is a PMTiles archive read by
+HTTP byte-range requests, and Python's built-in server ignores `Range` headers - see the local
+testing note further down for what that failure looks like.
+
+**Port 8000 specifically.** `index.html` validates the origin of every `postMessage` against a
+fixed allowlist, and only `localhost:8000` and `127.0.0.1:8000` are on it. On any other port the
+page loads and looks correct, but the map and directory silently stop talking to each other.
+
+Open `directory.html`, not `index.html`. On its own `index.html` is just the map; the two-way link
+only exists when the map is embedded in the host page.
+
+### Testing the cross-origin path
+
+In production the directory lives on the county's WordPress and the map is an iframe from GitHub
+Pages - two different origins, with the origin checks on both sides doing real work. Served
+locally, both files come from the same origin and `directory-map-link.js` detects that, so none of
+that code actually runs.
+
+`localhost` and `127.0.0.1` are distinct origins to a browser despite being the same server, and
+both are already allowlisted - so the real path can be exercised without touching `index.html`:
+
+1. Point the iframe at the other hostname: in `directory.html`, `src="index.html"` becomes
+   `src="http://localhost:8000/index.html"`
+2. In `directory-map-link.js`, set `MAP_ORIGIN` to `'http://localhost:8000'`
+3. Load the page at **http://127.0.0.1:8000/directory.html** - note the different hostname; using
+   `localhost` for both puts you back to same-origin and tests nothing
+4. Confirm both directions work: an org in a map popup scrolls the directory, and "Show on map"
+   moves the map
+
+Then the negative case, which is the half that actually proves the check is enforced. Set
+`MAP_ORIGIN` to `'http://localhost:9999'` and reload. Both directions should stop working. Only
+one of them reports anything: `postMessage` throws a visible console error going out, while
+incoming messages are dropped by a silent guard clause. To see that rejection rather than infer
+it, add a listener of your own before clicking:
+
+```js
+window.addEventListener('message', e => console.log('RX from', e.origin, e.data));
+```
+
+The message still arrives - it is the app's own origin check that discards it.
+
+Revert when finished. `directory.html` is generated, so rebuild rather than hand-editing it back:
+
+```bash
+python3 scripts/build_directory.py
+git checkout directory-map-link.js
+git status --short        # must be empty
+```
+
+Do not commit a hardcoded `localhost` in either file.
 
 ## Folder layout
 
 ```
 pchr-watershed-directory/
 ├── index.html                          # the map - MapLibre GL JS, single file
+├── directory.html                      # GENERATED - do not hand-edit
+├── directory.css                       # directory styling, kept separate to port into WordPress
+├── directory-map-link.js               # host side of the map/directory postMessage link
+├── requirements.txt                    # Python deps for scripts/ only
 ├── data/
 │   ├── raw/                            # originals exactly as received, never edited
 │   ├── clean/
 │   │   ├── boundaries.geojson          # every service-area shape, one row each
 │   │   └── orgs.json                   # every org, pointing at a boundary_id
 │   ├── reference/                      # map context that isn't an org boundary
-│   │   ├── upper_colorado_region.geojson
 │   │   ├── nhd_rivers.geojson
 │   │   └── caucuses.geojson
 │   └── basemap/                        # self-hosted PMTiles archives
-└── scripts/                            # data pipeline
+├── scripts/                            # data pipeline
+│   ├── build_directory.py              # orgs.json  ->  directory.html
+│   ├── fetch_dola_district.py          # pull an official boundary from Colorado DOLA
+│   ├── clean_org_boundary.py           # validity repair, hole removal, clipping
+│   └── build_dwr_areas.py              # NOT currently used by the map
+└── .github/
+    └── PULL_REQUEST_TEMPLATE.md
 ```
+
+**`directory.html` is generated.** `scripts/build_directory.py` writes it from `orgs.json`. Edit
+the script or the data, never the HTML - a hand edit is silently destroyed by the next build.
+
+After the county takes the directory into WordPress, they own that content and `orgs.json` will go
+stale relative to what's published. Re-running the generator at that point would overwrite their
+edits. Don't, without asking them first.
 
 **One shape, one place.** Every polygon the map draws lives exactly once, as a row in
 `data/clean/boundaries.geojson`. There are no per-org files, no duplicate copies in
@@ -160,10 +281,13 @@ are all rows in `data/clean/boundaries.geojson` — they're real assigned servic
 (RFC/RWAPA/PCHR, CVEPA, and CBRT/CWCB/CRD respectively), not backdrop, so they belong with the
 other boundaries rather than in `reference/`.
 
-`data/reference/` now holds only the three shapes that aren't anyone's service area:
-`upper_colorado_region.geojson` (HUC-2 context outline), `nhd_rivers.geojson`, and
-`caucuses.geojson` (all 13 official Pitkin caucuses — scope decision, 2 vs. 13, still pending
-with Gwen).
+`data/reference/` now holds only the two shapes that aren't anyone's service area:
+`nhd_rivers.geojson` and `caucuses.geojson` (all 13 official Pitkin caucuses — scope decision,
+2 vs. 13, still pending with Gwen).
+
+`upper_colorado_region.geojson` (HUC-2 context outline) went too, in the 7/30/26 clip: once
+everything was cut to the Roaring Fork HUC-8 and the zoom floor was set to that extent, a
+region-scale outline could never come into view.
 
 Removed in the 7/30/26 consolidation: the undissolved 30-feature `co_west_slope_basin.geojson`
 (superseded by the dissolved version, which then moved into `boundaries.geojson`),
@@ -298,12 +422,28 @@ JS library detects this and throws `"Server returned no content-length header or
 exceeding request"` rather than silently corrupting itself - if you see that error locally, this is
 why.
 
-Use this instead when testing locally:
+Use this instead when testing locally (it's in `requirements.txt`, so a `pip install -r` covers
+it):
 
 ```
-python3 -m pip install RangeHTTPServer --break-system-packages
 python3 -m RangeHTTPServer 8000
 ```
 
-This is purely a local dev server limitation - GitHub Pages' own servers handle Range requests
-correctly, so the deployed site isn't affected.
+`http.server` also raises `BrokenPipeError` in its own console when this happens. That traceback
+is a symptom, not a separate problem: it answered `200` and started streaming the whole 17 MB
+archive, and the PMTiles client - which wanted a few KB - hung up on it.
+
+This is purely a local dev server limitation. GitHub Pages handles Range requests correctly,
+confirmed 7/30/26 against the live archive:
+
+```
+curl -s -o /dev/null -D - -r 0-99 \
+  https://chgiersch.github.io/pchr-watershed-directory/data/basemap/roaring-fork.pmtiles
+
+HTTP/2 206
+content-range: bytes 0-99/18743140
+access-control-allow-origin: *
+```
+
+Use `-r`, not `-I -H "Range: ..."`. The latter sends a HEAD request, which servers answer with
+`200` whether or not they support ranges - so it looks like a failure when nothing is wrong.

@@ -29,7 +29,7 @@
     "website": "bwcd.org",
     "boundary_id": "bwcd_boundary",
     "category_confirmed": true,
-    "caveat": "Service area boundary. Provided by Eric Mangeot (Sphero Environmental) via KML export, 7/9/26."
+    "caveat": "Boundary from the Colorado conservancy districts shapefile provided by Gwen Garcelon, 8/26/26 (source layer dated 11/2014). Replaces a 7/9/26 KML from Eric Mangeot (Sphero Environmental) that described itself as a general perimeter and covered 2,919 km2 - 77% of the watershed - against 519 km2 here."
   },
   {
     "org_name": "Roaring Fork Conservancy",

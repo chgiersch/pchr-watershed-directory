@@ -58,23 +58,41 @@ ORGS = REPO / "data" / "clean" / "orgs.json"
 OUT_PAGE = REPO / "directory.html"
 OUT_FRAGMENT = REPO / "_working" / "directory-fragment.html"
 
-# Order the sections appear in, with the framing sentence for each. Agreed on
-# the 7/30 planning call: statewide, then local watershed, then providers, then
-# caucuses. Reads outward-in - the broadest jurisdictions first, then the
-# organizations closest to a resident's tap.
+# Order the sections appear in, with the framing sentence for each.
+#
+# Local first, then state and regional, then providers, then caucuses - the
+# grouping Gwen set on the roster, 8/25/26. This reverses the outward-in order
+# agreed on the 7/30 call. The reason for the change: someone arriving at this
+# page is far more likely to be looking for the organization working on their
+# river than for a state agency, and the first section is the one that gets
+# read. Broadest-first was tidier taxonomy and worse for the reader.
+#
+# The strings here must match the `section` values in orgs.json exactly - that
+# field is what assigns an org to a section, and a mismatch silently produces
+# an empty section rather than an error.
 SECTIONS = [
     (
-        "Statewide and basin-wide organizations",
+        # "Local" is load-bearing: watersheds nest, so the Crystal is a
+        # sub-watershed of the Roaring Fork, which sits inside the Colorado
+        # basin. Without it the heading doesn't distinguish itself from the
+        # basin-scale section below.
+        "Local watershed organizations",
+        "Organizations working at the scale of the Roaring Fork watershed or one "
+        "of its sub-watersheds - research, restoration, advocacy and regional "
+        "planning.",
+    ),
+    (
+        # Not "watershed-wide": three of the four here are basin-scale or
+        # statewide, and reusing "watershed" would collide with the section
+        # above. DWR is the exception - a state agency whose local jurisdiction
+        # is exactly this watershed - which is why it sits under a different
+        # heading here than in the map popup. The popup groups by geographic
+        # extent, this groups by type of body. Both are right on their own axis.
+        "Basin and statewide organizations",
         "Agencies and bodies that set water policy, administer water rights and "
         "fund projects at state or Colorado River basin scale. Their "
         "jurisdictions reach well beyond the Roaring Fork - each entry states "
         "its actual extent.",
-    ),
-    (
-        "Watershed organizations",
-        "Organizations working at the scale of the Roaring Fork watershed or one "
-        "of its sub-watersheds - research, restoration, advocacy and regional "
-        "planning.",
     ),
     (
         "Water providers",

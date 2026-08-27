@@ -47,16 +47,23 @@ macOS) and retry.
 ### Running it locally
 
 ```bash
-python3 -m RangeHTTPServer 8000
+python3 scripts/serve.py
 ```
 
 Then open **http://localhost:8000/directory.html**.
 
-Two things about that command that are not interchangeable with the obvious alternative:
+Use that script, not a generic server. It does two things a plain server doesn't, and both have
+cost real debugging time here:
 
-**Use `RangeHTTPServer`, not `python3 -m http.server`.** The basemap is a PMTiles archive read by
-HTTP byte-range requests, and Python's built-in server ignores `Range` headers - see the local
-testing note further down for what that failure looks like.
+**Range requests.** The basemap is a PMTiles archive read by HTTP byte-range requests, and
+`python3 -m http.server` ignores `Range` headers - see the local testing note further down for
+what that failure looks like.
+
+**No caching.** Without a `Cache-Control` header Chrome caches served files, and in particular
+keeps running a STALE `index.html` inside the directory page's iframe even after a hard reload of
+the parent page. The symptom is maddening: the directory shows new code, the map runs old code,
+and the postMessage link between them silently dies (8/27/26). The script sends `no-store`, so
+what's in the browser is always what's on disk.
 
 **Port 8000 specifically.** `index.html` validates the origin of every `postMessage` against a
 fixed allowlist, and only `localhost:8000` and `127.0.0.1:8000` are on it. On any other port the
@@ -422,11 +429,11 @@ JS library detects this and throws `"Server returned no content-length header or
 exceeding request"` rather than silently corrupting itself - if you see that error locally, this is
 why.
 
-Use this instead when testing locally (it's in `requirements.txt`, so a `pip install -r` covers
-it):
+Use the project's dev server instead, which layers `Cache-Control: no-store` on top of
+RangeHTTPServer's Range support (see "Running it locally" above for why both matter):
 
 ```
-python3 -m RangeHTTPServer 8000
+python3 scripts/serve.py
 ```
 
 `http.server` also raises `BrokenPipeError` in its own console when this happens. That traceback

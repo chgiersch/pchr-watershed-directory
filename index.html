@@ -340,26 +340,34 @@
   // 'boundaries_country' (state/national lines - much sparser, still useful
   // context at the zoomed-out view).
   const basemapStyleLayers = basemaps.layers(BASEMAP_SOURCE, basemaps.namedFlavor(BASEMAP_FLAVOR), { lang: 'en' })
-    .filter(l => l.id !== 'boundaries');
+    // 'places_region' and 'places_country' are dropped along with
+    // 'boundaries': at state zoom they label "CO" and "United States" across
+    // the middle of what is supposed to read as a locator of one state -
+    // noise with no information. The basemap's CITY labels stay, and they're
+    // sufficient: the low-zoom overview tiles in the extract cover far more
+    // than the watershed bbox (a z6 tile containing the basin spans half of
+    // Colorado), so Denver, Grand Junction and the rest label themselves. A
+    // hand-made landmark layer added on 8/27/26 duplicated exactly those
+    // labels and was removed the same day - don't re-add one.
+    .filter(l => !['boundaries', 'places_region', 'places_country'].includes(l.id));
 
-  // Extent of the Roaring Fork HUC-8, and the slightly looser box the viewport
-  // is locked to. The margin gives a little breathing room at the edges without
-  // letting the watershed drift off-centre.
+  // Extent of the Roaring Fork HUC-8 - the initial view and the home target.
   const WATERSHED_BOUNDS = [
     [-107.46575, 38.97765], // southwest
     [-106.48108, 39.56394]  // northeast
   ];
-  // Panning limit. Deliberately looser than the watershed: maxBounds caps how
-  // far you can zoom out (the visible area must stay inside it), so a box that
-  // hugs the watershed makes it impossible to ever see the whole thing at once
-  // on a wide, short viewport - the width fills the box while the top and
-  // bottom of the watershed are still cropped. The real zoom floor is set from
-  // the actual fitted zoom in fitToWatershed() below, which adapts to whatever
-  // size the map is rendered at.
-  const VIEW_LIMIT = [
-    [-108.05, 38.70],
-    [-105.90, 39.85]
+  // Colorado. The furthest the map zooms out, so the statewide and basin
+  // organizations can be seen at their true extents (county review, 8/26/26).
+  // Beyond this there is nothing to show - every shape the map draws lives
+  // inside the state.
+  const COLORADO_BOUNDS = [
+    [-109.060, 36.992],
+    [-102.041, 41.003]
   ];
+  // How much slack to leave around the fitted view when setting the panning
+  // limit, as a fraction of the visible span. Enough to nudge the map without
+  // being able to wander off the data.
+  const PAN_SLACK = 0.05;
 
   const map = new maplibregl.Map({
     container: 'map',
@@ -381,10 +389,8 @@
     // second, so it should never open anywhere else.
     bounds: WATERSHED_BOUNDS,
     fitBoundsOptions: { padding: 20 },
-    // Project scope is the Roaring Fork only and every boundary is clipped to
-    // it, so panning away just shows shapes cut off at an arbitrary edge.
-    // maxBounds stops the wandering; the zoom floor is set in fitToWatershed().
-    maxBounds: VIEW_LIMIT,
+    // No maxBounds here on purpose. fitToWatershed() sets it from the fitted
+    // view once the container has been measured - see the note there.
     maxZoom: 15,
     attributionControl: true
   });
@@ -570,35 +576,112 @@
     activePopup = null;   // the early-returning close handler skips this
   }
 
-  // Frame the watershed and make that the furthest you can zoom out.
+  // Derive the zoom floor and the panning limit from a MEASURED fit of
+  // Colorado, never from constants.
   //
-  // The floor has to be measured rather than hardcoded: the zoom at which the
-  // watershed fits depends on the container's size and aspect, which differ
-  // between desktop, phone, and an iframe embed of unknown dimensions. So fit
-  // first, read the resulting zoom, and use that as minZoom. Re-run on resize
-  // so a window drag or orientation change can't leave the floor wrong.
-  function fitToWatershed() {
-    // Clear any previous floor first, or it clamps the fit we're about to make.
+  // The lesson is paid for: a hardcoded maxBounds silently wins over
+  // fitBounds. MapLibre will not let the viewport show more ground than the
+  // box allows, so on a wide, short container - where fitting a shape's
+  // height means showing a great deal of extra longitude - it zooms IN until
+  // the width fits, cropping the shape top and bottom. That cropped the
+  // watershed for a month (measured live at 1792x460: fitBounds asked for
+  // 8.579, the map settled at 9.195). The same bug was waiting at state
+  // scale, so the same cure: fit, read what the fit produced, set both
+  // constraints from that. maxBounds then contains the fitted view by
+  // construction at any container size.
+  //
+  // The fit-and-measure happens with the camera saved and restored around it.
+  // Everything here runs in one synchronous block, so no frame paints between
+  // the measuring fit and the restore - the user never sees it.
+  function applyZoomConstraints() {
+    const saved = {
+      center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing()
+    };
     map.setMinZoom(0);
-    // Un-animated, so this applies immediately and getZoom() below reads the
-    // fitted value. Deliberately not waiting on 'moveend': on first load the
-    // map is already at these bounds via the constructor's `bounds` option, so
-    // there's no movement and the event never fires.
-    map.fitBounds(WATERSHED_BOUNDS, { padding: 24, animate: false });
+    map.setMaxBounds(null);
+    map.fitBounds(COLORADO_BOUNDS, { padding: 12, animate: false });
+
     map.setMinZoom(map.getZoom());
+    const v = map.getBounds();
+    const lonPad = (v.getEast() - v.getWest()) * PAN_SLACK;
+    const latPad = (v.getNorth() - v.getSouth()) * PAN_SLACK;
+    map.setMaxBounds([
+      [v.getWest() - lonPad, v.getSouth() - latPad],
+      [v.getEast() + lonPad, v.getNorth() + latPad]
+    ]);
+
+    // jumpTo clamps to the constraints just set, so a view that no longer
+    // fits the resized container lands at the nearest legal one.
+    map.jumpTo(saved);
   }
 
-  map.on('load', () => fitToWatershed());
+  // Home view: the whole watershed. Initial camera, and the home button's
+  // target. Animation honours reduced-motion via the caller passing animate.
+  function fitToWatershed(opts = {}) {
+    map.fitBounds(WATERSHED_BOUNDS, {
+      padding: 24,
+      animate: opts.animate === true && !prefersReducedMotion()
+    });
+  }
 
-  // Debounced so dragging a window edge doesn't thrash the fit.
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => fitToWatershed(), 150);
+  map.on('load', () => {
+    applyZoomConstraints();
+    fitToWatershed();
   });
+
+  // On resize only the CONSTRAINTS are recomputed - the camera stays where
+  // the user put it. Re-fitting the watershed here (as an earlier version
+  // did) would yank someone out of a state-level view they had deliberately
+  // zoomed to, and now that zooming out is allowed, a resize that crops the
+  // view is recoverable by the user in a way it wasn't before.
+  let resizeTimer;
+  const refit = () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => applyZoomConstraints(), 150);
+  };
+  window.addEventListener('resize', refit);
+
+  // Belt and braces for the embedded case. The iframe's own window fires
+  // 'resize' when the frame element changes size, but a ResizeObserver also
+  // catches the container being restyled without the viewport moving - a
+  // collapsing panel, say. Refitting doesn't change the element's size, so
+  // there's no feedback loop.
+  if (window.ResizeObserver) {
+    new ResizeObserver(refit).observe(map.getContainer());
+  }
 
   // Navigation controls
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+  // Home: back to the whole watershed, selection cleared. Required now that
+  // the map zooms out to state scale - without it, finding your way back to
+  // the subject takes deliberate panning. Follows MapLibre's IControl shape
+  // so it stacks with the zoom buttons and inherits their styling.
+  //
+  // The handlers this calls are defined inside the data-load callback below,
+  // so they're looked up at click time via window-scope indirection set up
+  // there (goHome). Until data loads the button just re-fits the view.
+  let goHome = () => fitToWatershed({ animate: true });
+  map.addControl({
+    onAdd() {
+      const container = document.createElement('div');
+      container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('aria-label', 'Reset the map to the Roaring Fork Watershed');
+      btn.title = 'Back to the watershed';
+      btn.innerHTML =
+        '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" ' +
+        'style="display:block;margin:auto" fill="none" stroke="currentColor" ' +
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/></svg>';
+      btn.addEventListener('click', () => goHome());
+      container.appendChild(btn);
+      this._container = container;
+      return container;
+    },
+    onRemove() { this._container.remove(); }
+  }, 'top-right');
 
   // Load reference layers + org boundaries together, so we can control stacking order
   // regardless of which fetch finishes first.
@@ -642,8 +725,10 @@
     Promise.all([
       loadJSON('data/reference/nhd_rivers.geojson'),
       loadJSON('data/clean/boundaries.geojson'),
-      loadJSON('data/clean/orgs.json')
-    ]).then(([rivers, boundaries, orgs]) => {
+      loadJSON('data/clean/orgs.json'),
+      loadJSON('data/reference/co_counties.geojson'),
+      loadJSON('data/reference/reference_extents.geojson')
+    ]).then(([rivers, boundaries, orgs, counties, refExtents]) => {
 
       // Group orgs by boundary_id for the click-time join.
       const orgsByBoundary = new Map();
@@ -755,6 +840,33 @@
         }
       });
 
+      // ---- State-scale context ----
+      // The basemap archive only carries tiles for the watershed bbox, so
+      // zoomed out there is nothing but background. Deliberate: at state
+      // scale a reader needs jurisdiction lines and a few landmarks, not
+      // street detail, and a statewide tile extract would run to hundreds of
+      // MB. County lines are the landmark grid in rural Colorado - they also
+      // happen to be what the CRD boundary follows, which makes that shape
+      // legible when it appears. The mask above already veils everything
+      // outside the watershed, so at state zoom the basin reads as the bright
+      // subject of a locator map for free.
+      //
+      // Everything here fades out by z9, where the detailed basemap takes
+      // over the same job.
+      map.addSource('counties', { type: 'geojson', data: counties });
+      map.addLayer({
+        id: 'counties-line',
+        type: 'line',
+        source: 'counties',
+        maxzoom: 9,
+        paint: {
+          'line-color': '#8a969e',
+          'line-width': 0.75,
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 7.5, 0.55, 9, 0]
+        }
+      });
+
+
       // ---- Watershed outline ----
       // The map's frame. Also the highlight target for orgs whose real
       // jurisdiction is bigger than anything drawn here (CBRT/CWCB/CRD are
@@ -763,24 +875,64 @@
       // in the directory lights up this outline instead.
       map.addSource('watershed', { type: 'geojson', data: watershed });
 
-      // Same reason as the org labels: MapLibre tiles a GeoJSON source and
-      // places one label per polygon PER TILE, so this shape - which spans
-      // several tiles at every usable zoom - can render its name more than
-      // once. Collision detection happens to suppress the second copy at the
-      // default view, but that's luck, not a guarantee. Labelling a single
-      // precomputed point removes the possibility.
-      map.addSource('watershed-label-point', {
+      // ---- Reference extents ----
+      // One mechanism for every "this org covers all of X" shape: the
+      // watershed, the Colorado River mainstem basin (CBRT), the River
+      // District (CRD), and the state (CWCB). These draw ONLY while such an
+      // org is selected - a state view with permanently colored extents would
+      // read as an inventory of Colorado's water organizations, which this
+      // map is not (Gwen's scope concern, 8/27/26). Appearing in response to
+      // the reader's own click, titled with one org's extent, claims nothing
+      // broader.
+      //
+      // The watershed feature comes from boundaries.geojson at runtime rather
+      // than being copied into reference_extents.geojson - one shape, one
+      // place. It's normalized here to the same schema.
+      const extentFeatures = [
+        {
+          type: 'Feature',
+          properties: {
+            extent_id: watershed.properties.boundary_id,
+            label: 'Roaring Fork Watershed',
+            label_lon: watershed.properties.label_lon,
+            label_lat: watershed.properties.label_lat
+          },
+          geometry: watershed.geometry
+        },
+        ...refExtents.features.map(f => ({
+          type: 'Feature',
+          properties: {
+            extent_id: f.properties.extent_id,
+            label: f.properties.label,
+            label_lon: f.properties.label_lon,
+            label_lat: f.properties.label_lat
+          },
+          geometry: f.geometry
+        }))
+      ];
+      const extentById = new Map(extentFeatures.map(f => [f.properties.extent_id, f]));
+
+      map.addSource('ref-extents', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: extentFeatures }
+      });
+
+      // Labels from precomputed points, same as the org labels: MapLibre
+      // places one label per polygon PER TILE, so a shape spanning tiles
+      // renders its name repeatedly. One point per extent removes the
+      // possibility.
+      map.addSource('ref-extent-labels', {
         type: 'geojson',
         data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'Point',
-            coordinates: [
-              watershed.properties.label_lon,
-              watershed.properties.label_lat
-            ]
-          }
+          type: 'FeatureCollection',
+          features: extentFeatures.map(f => ({
+            type: 'Feature',
+            properties: f.properties,
+            geometry: {
+              type: 'Point',
+              coordinates: [f.properties.label_lon, f.properties.label_lat]
+            }
+          }))
         }
       });
 
@@ -797,38 +949,12 @@
       // Never drawn - this exists purely as a click target, so that a click
       // anywhere inside the basin (including the gaps between service areas)
       // still surfaces the watershed-wide and statewide orgs in the popup.
-      // The visible watershed-wide highlight is 'watershed-hatch' below.
+      // The visible highlight is the 'extent-hatch' layer below.
       map.addLayer({
         id: 'watershed-highlight',
         type: 'fill',
         source: 'watershed',
         paint: { 'fill-opacity': 0 }
-      });
-
-      // Names the watershed when it's the thing highlighted. Hidden by default:
-      // the ten service-area labels carry the map the rest of the time, and this
-      // one sits mid-basin where it would collide with BWCD's. The text is set
-      // at highlight time because it differs by org - a watershed-wide body gets
-      // the plain name, a statewide one gets a note that this is only part of
-      // its area.
-      map.addLayer({
-        id: 'watershed-label',
-        type: 'symbol',
-        source: 'watershed-label-point',
-        layout: {
-          visibility: 'none',
-          'text-field': 'Roaring Fork Watershed',
-          'text-font': ['Noto Sans Medium'],
-          'text-size': ['interpolate', ['linear'], ['zoom'], 8, 14, 12, 17],
-          'text-max-width': 12,
-          'text-line-height': 1.3,
-          'text-letter-spacing': 0.01
-        },
-        paint: {
-          'text-color': rootStyle.getPropertyValue('--navy').trim(),
-          'text-halo-color': '#ffffff',
-          'text-halo-width': 2.5
-        }
       });
 
       // ---- Named rivers/streams (NHD) - watershed context ----
@@ -851,6 +977,7 @@
         id: 'rivers-label',
         type: 'symbol',
         source: 'nhd-rivers',
+        minzoom: 8,   // same reason as org-label: not locator-scale content
         layout: {
           'symbol-placement': 'line',
           'text-field': ['get', 'name'],
@@ -955,6 +1082,9 @@
         id: 'org-label',
         type: 'symbol',
         source: 'org-labels',
+        // Below z8 the map is a state-scale locator; a huddle of district
+        // names inside one small bright shape is noise there.
+        minzoom: 8,
         filter: ['>=', ['get', 'areasqkm'],
           ['step', ['zoom'],
             500,      // z8-9   - the two conservancy districts and the Crystal
@@ -1022,18 +1152,21 @@
         }
       }, 'org-label');
 
-      // ---- Watershed-wide emphasis ----
-      // Statewide, basin-wide and watershed-wide bodies have no service area of
-      // their own, so selecting one highlights the whole basin. A flat blue
-      // tint wasn't enough: with ten colored service areas and the river
-      // network underneath, a wash just reads as more map. This lays a hatched
-      // grey veil over the entire watershed and thickens its edge to black,
-      // which reads unambiguously as "all of this" - and carries the state in
-      // texture rather than color alone, which is what WCAG 1.4.1 asks for.
+      // ---- Extent emphasis ----
+      // The visual for "this org covers all of X", where X is whichever
+      // reference extent it maps to: the watershed, the mainstem basin, the
+      // River District, or the state. A flat color tint wasn't enough: with
+      // ten colored service areas and the river network underneath, a wash
+      // just reads as more map. The hatch lays a grey veil with diagonal
+      // lines and a black edge, which reads unambiguously as "all of this" -
+      // and carries the state in texture rather than color alone, which is
+      // what WCAG 1.4.1 asks for.
       //
-      // Both layers sit at the top of the fill/line stack so they cover the org
-      // shapes. Symbol layers render in a later pass regardless of order, so
-      // the watershed label still sits on top of the hatch.
+      // ONE set of layers serves every extent, chosen by a filter on
+      // extent_id. The alternative - dedicated layers per shape, which is how
+      // the watershed alone worked at first - costs three layers per extent
+      // and threads each layer name through every selection function. The
+      // filter version grows by zero when an extent is added.
       const HATCH_TILE = 8;                        // CSS px between lines
       const HATCH_DPR  = 2;                        // drawn at 2x for retina
       const HATCH_VEIL = 'rgba(70, 82, 92, 0.26)'; // the grey wash
@@ -1072,23 +1205,27 @@
         };
       }
 
-      if (!map.hasImage('watershed-hatch')) {
-        map.addImage('watershed-hatch', buildHatchImage(), { pixelRatio: HATCH_DPR });
+      if (!map.hasImage('extent-hatch')) {
+        map.addImage('extent-hatch', buildHatchImage(), { pixelRatio: HATCH_DPR });
       }
 
+      // A filter no feature matches, used as the "nothing selected" state.
+      const MATCH_NONE = ['==', ['get', 'extent_id'], '__none__'];
+
       map.addLayer({
-        id: 'watershed-hatch',
+        id: 'extent-hatch',
         type: 'fill',
-        source: 'watershed',
-        layout: { visibility: 'none' },
-        paint: { 'fill-pattern': 'watershed-hatch' }
+        source: 'ref-extents',
+        filter: MATCH_NONE,
+        paint: { 'fill-pattern': 'extent-hatch' }
       });
 
       map.addLayer({
-        id: 'watershed-emphasis',
+        id: 'extent-emphasis',
         type: 'line',
-        source: 'watershed',
-        layout: { visibility: 'none', 'line-join': 'round' },
+        source: 'ref-extents',
+        filter: MATCH_NONE,
+        layout: { 'line-join': 'round' },
         paint: {
           'line-color': '#000000',
           'line-width': 2.5,
@@ -1096,32 +1233,55 @@
         }
       });
 
-      // The watershed name has to sit above its own hatch to stay readable, and
-      // MapLibre draws symbol layers in style order like any other layer - not
-      // in a later pass. 'watershed-label' was added early, next to the other
-      // watershed layers, so the hatch was painting over it. Rather than move
-      // the layer's definition away from the ones it belongs with, lift it to
-      // the top of the stack here, once its coverers exist.
-      map.moveLayer('watershed-label');
+      // Added after the hatch on purpose: MapLibre draws symbol layers in
+      // style order like any other layer - not in a later pass - so a label
+      // defined before its own hatch gets painted over by it. That exact bug
+      // has already happened once here.
+      map.addLayer({
+        id: 'extent-label',
+        type: 'symbol',
+        source: 'ref-extent-labels',
+        filter: MATCH_NONE,
+        layout: {
+          'text-field': ['get', 'label'],
+          'text-font': ['Noto Sans Medium'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 5, 13, 8, 14, 12, 17],
+          'text-max-width': 12,
+          'text-line-height': 1.3,
+          'text-letter-spacing': 0.01
+        },
+        paint: {
+          'text-color': rootStyle.getPropertyValue('--navy').trim(),
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2.5
+        }
+      });
 
-      function setWatershedEmphasis(on) {
-        const visibility = on ? 'visible' : 'none';
-        ['watershed-hatch', 'watershed-emphasis'].forEach(id => {
-          if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility);
+      // The whole selected-extent state, in one place: which shape carries
+      // the hatch, whether its name shows, and whether the org labels yield.
+      // Null clears it. Org labels hide while an extent is lit because the
+      // extent's own name is the answer to "what is highlighted", and BWCD's
+      // mid-basin label collides with it otherwise.
+      function setExtentEmphasis(extentId) {
+        const filter = extentId
+          ? ['==', ['get', 'extent_id'], extentId]
+          : MATCH_NONE;
+        ['extent-hatch', 'extent-emphasis', 'extent-label'].forEach(id => {
+          if (map.getLayer(id)) map.setFilter(id, filter);
         });
+        if (map.getLayer('org-label')) {
+          map.setLayoutProperty('org-label', 'visibility',
+            extentId ? 'none' : 'visible');
+        }
       }
 
       let selectedIds = [];
 
       function setSelection(ids) {
         selectedIds = ids;
-        // Any service-area selection cancels a watershed-wide highlight -
-        // otherwise both stay lit and it's unclear what's actually selected.
-        setWatershedEmphasis(false);
-        if (map.getLayer('watershed-label')) {
-          map.setLayoutProperty('watershed-label', 'visibility', 'none');
-          map.setLayoutProperty('org-label', 'visibility', 'visible');
-        }
+        // Any service-area selection cancels an extent highlight - otherwise
+        // both stay lit and it's unclear what's actually selected.
+        setExtentEmphasis(null);
         if (!ids.length) {
           map.setPaintProperty('org-fill', 'fill-opacity', BASE_FILL);
           map.setFilter('org-selected', ['==', ['get', 'boundary_id'], '__none__']);
@@ -1207,13 +1367,25 @@
           extentLabel += ` &middot; ${boundary.label}`;
         }
 
+        // Open ground gets no "Highlighted extent" header - nothing is
+        // highlighted, and the old wording ("no specific service area covers
+        // this point") read as false once wider extents existed: the
+        // watershed-wide and statewide orgs listed right below DO cover it.
+        // Say precisely what's absent - a local district or municipal area -
+        // and bridge to the sections that carry the real answer.
+        const firstSection = localOrgs.length
+          ? `<div class="popup-section">
+               <div class="popup-section-label">${extentLabel}</div>
+               ${localOrgs.map(orgBlock).join('') + extraHtml}
+             </div>`
+          : `<div class="popup-section">
+               <div class="popup-desc">No district or municipal service area
+               covers this point &ndash; the organizations below still
+               serve it.</div>
+             </div>`;
+
         return [
-          `<div class="popup-section">
-             <div class="popup-section-label">${extentLabel}</div>
-             ${localOrgs.length
-               ? localOrgs.map(orgBlock).join('') + extraHtml
-               : '<div class="popup-desc">No specific service area covers this point.</div>'}
-           </div>`,
+          firstSection,
           section('Roaring Fork watershed wide', watershedOrgs),
           section('State or basin wide', regionalOrgs)
         ].join('');
@@ -1396,38 +1568,28 @@
         // and away from the directory entry the reader is on.
         dismissPopupQuietly();
 
-        // The watershed-wide and statewide orgs all point at the watershed
-        // itself, which isn't drawn as a service area. Rather than doing
-        // nothing, light up the watershed outline and frame it - that IS their
-        // answer to "where do you operate", and it's what the highlight layer
-        // was added for.
+        // Orgs whose jurisdiction is bigger than any drawn service area point
+        // at the watershed boundary in the directory. Which extent actually
+        // lights up depends on WHICH org asked: the org row's extent_id names
+        // it (CWCB the state, CBRT the basin, CRD its district), and orgs
+        // without one get the watershed itself. This replaces the old
+        // "(part of a larger area)" caveat label - the map now shows the
+        // larger area instead of apologizing for not showing it.
         if (watershed && boundaryId === watershed.properties.boundary_id) {
           clearSelection();
 
-          // A statewide or basin-wide body operates well past this watershed,
-          // so labelling the highlight with just the watershed name would
-          // claim the wrong extent - the same misrepresentation that got the
-          // basin polygon removed. The second line says so plainly.
           const org = (orgsByBoundary.get(boundaryId) || [])
             .find(o => o.org_short === orgShort) || null;
-          const wider = org && org.tier === 'regional';
+          const extentId = (org && org.extent_id) || watershed.properties.boundary_id;
+          const extent = extentById.get(extentId)
+            || extentById.get(watershed.properties.boundary_id);
 
-          map.setLayoutProperty('watershed-label', 'text-field',
-            wider ? 'Roaring Fork Watershed\n(part of a larger area)'
-                  : 'Roaring Fork Watershed');
-          map.setLayoutProperty('watershed-label', 'visibility', 'visible');
-          // Org labels off while the watershed is the subject - otherwise this
-          // label collides with BWCD's mid-basin and it's unclear what's lit.
-          map.setLayoutProperty('org-label', 'visibility', 'none');
-
-          setWatershedEmphasis(true);
-          map.fitBounds(WATERSHED_BOUNDS, {
+          setExtentEmphasis(extent.properties.extent_id);
+          map.fitBounds(bboxOf(extent.geometry), {
             padding: 24,
             duration: prefersReducedMotion() ? 0 : 600
           });
-          announce(wider
-            ? 'Roaring Fork watershed highlighted. This organization also operates beyond it.'
-            : 'Roaring Fork watershed highlighted.');
+          announce(`${extent.properties.label} highlighted.`);
           return true;
         }
 
@@ -1435,9 +1597,8 @@
         if (!feature) return false;
         const p = feature.properties;
 
-        // Any previous watershed highlight comes off, and the org labels come
-        // back - setSelection handles the fill, this handles the labels.
-        restoreOrgLabels();
+        // setSelection clears any extent highlight and restores the org
+        // labels on its own.
         setSelection([boundaryId]);
         // Frame the whole service area, not its label anchor. Centring on the
         // anchor at a fixed zoom pushed the edges of the larger districts off
@@ -1458,13 +1619,15 @@
         return true;
       }
 
-      // Undo the watershed-wide display state.
-      function restoreOrgLabels() {
-        setWatershedEmphasis(false);
-        if (!map.getLayer('watershed-label')) return;
-        map.setLayoutProperty('watershed-label', 'visibility', 'none');
-        map.setLayoutProperty('org-label', 'visibility', 'visible');
-      }
+      // Home button, now that everything it needs exists: back to the
+      // watershed view with nothing selected and no popup. Replaces the
+      // load-time placeholder that could only re-fit.
+      goHome = () => {
+        closePopup();
+        clearSelection();
+        fitToWatershed({ animate: true });
+        announce('Map reset to the Roaring Fork Watershed.');
+      };
 
       // Tell the host what's available, so it can wire up only the rows that
       // actually have a shape on the map rather than guessing.

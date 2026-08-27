@@ -197,6 +197,23 @@ def render_actions(show_on_map, website):
     )
 
 
+def display_name(org):
+    """Compose "Full Name (ABBR)" from org_name + org_short.
+
+    The abbreviation is appended, never baked into org_name - two rows used
+    to carry it in the name field (one as the whole name, one leading), which
+    made the list read inconsistently and duplicated the short code in two
+    fields. Skipped where it adds nothing: when the short code is just a
+    word of the name uppercased (BASALT in "Town of Basalt"), the reader
+    already has it.
+    """
+    name = org["org_name"]
+    short = org.get("org_short", "")
+    if not short or short.lower() in name.lower():
+        return esc(name)
+    return f'{esc(name)} <span class="org__abbr">({esc(short)})</span>'
+
+
 def funding_badge(value):
     """Turn the roster's free-text funding answer into a flag plus detail.
 
@@ -241,10 +258,23 @@ def render_entry(org):
     # "Snowmass Water and Sanitation District, offers funding", which is a
     # reasonable thing to hear.
     flag = ('<span class="org__flag">Offers funding</span>' if offers else "")
+
+    # The extent, visible on the COLLAPSED row. Tim's county review (8/26/26)
+    # made the case for this: "the state-wide orgs can't be recognized as such"
+    # - because the scope only appeared after expanding. Shown as plain text
+    # right of the name, so a scan down the closed list answers "how big is
+    # each of these" without a single click. The words come from orgs.json's
+    # `scope` field, the same one the expanded body and the map popup show -
+    # one source of truth, three surfaces.
+    extent = (f'<span class="org__extent">{esc(org["scope"])}</span>'
+              if org.get("scope") else "")
+
     parts = [f'  <details class="org"{attrs}>']
     parts.append('    <summary class="org__summary">')
     parts.append(
-        f'      <h3 class="org__name">{esc(org["org_name"])}{flag}</h3>'
+        '      <h3 class="org__name">'
+        f'<span class="org__title">{display_name(org)}{extent}</span>'
+        f'{flag}</h3>'
     )
     parts.append("    </summary>")
     parts.append('    <div class="org__body">')
@@ -286,9 +316,15 @@ def render_entry(org):
 
 
 def render_caucus_entry(name, area, note, site):
+    # Same collapsed-row extent as the orgs, for the same reason - and because
+    # a list where some rows carry it and some don't reads as an error.
     parts = ['  <details class="org">']
     parts.append('    <summary class="org__summary">')
-    parts.append(f'      <h3 class="org__name">{esc(name)}</h3>')
+    parts.append(
+        '      <h3 class="org__name">'
+        f'<span class="org__title">{esc(name)}'
+        f'<span class="org__extent">{esc(area)}</span></span></h3>'
+    )
     parts.append("    </summary>")
     parts.append('    <div class="org__body">')
     parts.append(
@@ -303,11 +339,28 @@ def render_caucus_entry(name, area, note, site):
     return "\n".join(parts)
 
 
-MAP_EMBED = """<div class="map-panel">
+# Visible on every build until the county adopts the page. Two audiences: Tim
+# and Gwen, so review arrives as "is this the right content and behavior"
+# rather than notes on fonts that will be replaced by the county theme anyway;
+# and anyone who stumbles onto the GitHub Pages URL before launch, so the page
+# says what it is. Delete this constant (and the .prototype-note CSS rule) at
+# handoff.
+PROTOTYPE_NOTE = """<p class="prototype-note">
+  <strong>Working prototype.</strong> Content and function are under review
+  with Pitkin County Healthy Rivers; the visual design will change to match
+  the county site when adopted.
+</p>"""
+
+MAP_EMBED = PROTOTYPE_NOTE + """<div class="map-panel">
   <p class="map-panel__intro" id="map-intro">
     Interactive map of water management service areas in the Roaring Fork
-    watershed. Every organization shown is also listed in the directory below,
-    with its service area described in text.
+    watershed. Click any colored area for the organizations that serve it, or
+    press &ldquo;Show on map&rdquo; in a listing below to highlight its
+    territory &ndash; for statewide and basin-scale organizations the map
+    zooms out to show their full extent within Colorado. The house button
+    returns to the watershed. Every organization is also listed below, with
+    its service area described in text; only organizations serving the
+    Roaring Fork watershed appear on this page.
   </p>
   <iframe
     class="map-panel__frame"

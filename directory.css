@@ -76,6 +76,20 @@ body {
   opacity: 0.8;
 }
 
+/* Prototype banner. Visible but quiet - it should register once, not compete
+   with the content it's qualifying. Amber family rather than the site palette
+   so it clearly isn't part of the design being reviewed. Text at 7.2:1 on
+   this background. DELETE this rule together with PROTOTYPE_NOTE in
+   build_directory.py at handoff. */
+.prototype-note {
+  margin: 0;
+  padding: 0.6rem 1.25rem;
+  background: #fdf3d7;
+  border-bottom: 1px solid #e8d089;
+  font-size: 0.8125rem;
+  color: #5c4a12;
+}
+
 /* ---- Sticky map ---- */
 /* Sticks while the directory scrolls beneath it, so the map stays available
    without following you as a floating overlay. Height is capped in vh so it
@@ -221,6 +235,39 @@ body {
   font-weight: 700;
   color: var(--navy);
   line-height: 1.35;
+}
+
+/* Name + extent as one wrapping unit, so the flag stays pinned right while a
+   long extent ("Roaring Fork watershed - Water District 38...") wraps under
+   the name instead of shoving the flag off the row. */
+.org__title {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.6rem;
+}
+
+/* The org's reach, visible without expanding - a scan down the closed list
+   answers "how big is each of these". Body font at muted weight so it reads
+   as an annotation on the name, not part of it. The separator dot lives in
+   CSS because it's decoration; the text alone has to carry the meaning for
+   screen readers, which hear "name, extent, offers funding". */
+.org__extent {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.org__extent::before {
+  content: '\00B7\00A0';   /* middot + no-break space */
+}
+
+/* The appended abbreviation - part of the heading for search and screen
+   readers, visually quieter than the name it follows. */
+.org__abbr {
+  font-weight: 400;
+  color: var(--muted);
 }
 
 /* Surfaced on the closed row so someone hunting for grant sources can scan

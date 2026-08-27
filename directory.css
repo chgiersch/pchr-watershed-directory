@@ -223,6 +223,32 @@ body {
   line-height: 1.35;
 }
 
+/* Name + extent as one wrapping unit, so the flag stays pinned right while a
+   long extent ("Roaring Fork watershed - Water District 38...") wraps under
+   the name instead of shoving the flag off the row. */
+.org__title {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.6rem;
+}
+
+/* The org's reach, visible without expanding - a scan down the closed list
+   answers "how big is each of these". Body font at muted weight so it reads
+   as an annotation on the name, not part of it. The separator dot lives in
+   CSS because it's decoration; the text alone has to carry the meaning for
+   screen readers, which hear "name, extent, offers funding". */
+.org__extent {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.org__extent::before {
+  content: '\00B7\00A0';   /* middot + no-break space */
+}
+
 /* Surfaced on the closed row so someone hunting for grant sources can scan
    rather than opening all nineteen entries. */
 .org__flag {

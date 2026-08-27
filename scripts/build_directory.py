@@ -241,10 +241,23 @@ def render_entry(org):
     # "Snowmass Water and Sanitation District, offers funding", which is a
     # reasonable thing to hear.
     flag = ('<span class="org__flag">Offers funding</span>' if offers else "")
+
+    # The extent, visible on the COLLAPSED row. Tim's county review (8/26/26)
+    # made the case for this: "the state-wide orgs can't be recognized as such"
+    # - because the scope only appeared after expanding. Shown as plain text
+    # right of the name, so a scan down the closed list answers "how big is
+    # each of these" without a single click. The words come from orgs.json's
+    # `scope` field, the same one the expanded body and the map popup show -
+    # one source of truth, three surfaces.
+    extent = (f'<span class="org__extent">{esc(org["scope"])}</span>'
+              if org.get("scope") else "")
+
     parts = [f'  <details class="org"{attrs}>']
     parts.append('    <summary class="org__summary">')
     parts.append(
-        f'      <h3 class="org__name">{esc(org["org_name"])}{flag}</h3>'
+        '      <h3 class="org__name">'
+        f'<span class="org__title">{esc(org["org_name"])}{extent}</span>'
+        f'{flag}</h3>'
     )
     parts.append("    </summary>")
     parts.append('    <div class="org__body">')
@@ -286,9 +299,15 @@ def render_entry(org):
 
 
 def render_caucus_entry(name, area, note, site):
+    # Same collapsed-row extent as the orgs, for the same reason - and because
+    # a list where some rows carry it and some don't reads as an error.
     parts = ['  <details class="org">']
     parts.append('    <summary class="org__summary">')
-    parts.append(f'      <h3 class="org__name">{esc(name)}</h3>')
+    parts.append(
+        '      <h3 class="org__name">'
+        f'<span class="org__title">{esc(name)}'
+        f'<span class="org__extent">{esc(area)}</span></span></h3>'
+    )
     parts.append("    </summary>")
     parts.append('    <div class="org__body">')
     parts.append(
@@ -303,11 +322,27 @@ def render_caucus_entry(name, area, note, site):
     return "\n".join(parts)
 
 
-MAP_EMBED = """<div class="map-panel">
+# Visible on every build until the county adopts the page. Two audiences: Tim
+# and Gwen, so review arrives as "is this the right content and behavior"
+# rather than notes on fonts that will be replaced by the county theme anyway;
+# and anyone who stumbles onto the GitHub Pages URL before launch, so the page
+# says what it is. Delete this constant (and the .prototype-note CSS rule) at
+# handoff.
+PROTOTYPE_NOTE = """<p class="prototype-note">
+  <strong>Working prototype.</strong> Content and function are under review
+  with Pitkin County Healthy Rivers; the visual design will change to match
+  the county site when adopted.
+</p>"""
+
+MAP_EMBED = PROTOTYPE_NOTE + """<div class="map-panel">
   <p class="map-panel__intro" id="map-intro">
     Interactive map of water management service areas in the Roaring Fork
-    watershed. Every organization shown is also listed in the directory below,
-    with its service area described in text.
+    watershed. Click any colored area for the organizations that serve it, or
+    press &ldquo;Show on map&rdquo; in a listing below to highlight its
+    territory. Organizations that operate statewide or across the wider
+    Colorado River Basin reach far beyond this map&rsquo;s edges; each one
+    says so beside its name. Every organization is also listed below, with its
+    service area described in text.
   </p>
   <iframe
     class="map-panel__frame"

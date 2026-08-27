@@ -263,6 +263,13 @@ body {
   content: '\00B7\00A0';   /* middot + no-break space */
 }
 
+/* The appended abbreviation - part of the heading for search and screen
+   readers, visually quieter than the name it follows. */
+.org__abbr {
+  font-weight: 400;
+  color: var(--muted);
+}
+
 /* Surfaced on the closed row so someone hunting for grant sources can scan
    rather than opening all nineteen entries. */
 .org__flag {

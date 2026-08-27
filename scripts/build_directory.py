@@ -197,6 +197,23 @@ def render_actions(show_on_map, website):
     )
 
 
+def display_name(org):
+    """Compose "Full Name (ABBR)" from org_name + org_short.
+
+    The abbreviation is appended, never baked into org_name - two rows used
+    to carry it in the name field (one as the whole name, one leading), which
+    made the list read inconsistently and duplicated the short code in two
+    fields. Skipped where it adds nothing: when the short code is just a
+    word of the name uppercased (BASALT in "Town of Basalt"), the reader
+    already has it.
+    """
+    name = org["org_name"]
+    short = org.get("org_short", "")
+    if not short or short.lower() in name.lower():
+        return esc(name)
+    return f'{esc(name)} <span class="org__abbr">({esc(short)})</span>'
+
+
 def funding_badge(value):
     """Turn the roster's free-text funding answer into a flag plus detail.
 
@@ -256,7 +273,7 @@ def render_entry(org):
     parts.append('    <summary class="org__summary">')
     parts.append(
         '      <h3 class="org__name">'
-        f'<span class="org__title">{esc(org["org_name"])}{extent}</span>'
+        f'<span class="org__title">{display_name(org)}{extent}</span>'
         f'{flag}</h3>'
     )
     parts.append("    </summary>")
@@ -339,10 +356,11 @@ MAP_EMBED = PROTOTYPE_NOTE + """<div class="map-panel">
     Interactive map of water management service areas in the Roaring Fork
     watershed. Click any colored area for the organizations that serve it, or
     press &ldquo;Show on map&rdquo; in a listing below to highlight its
-    territory. Organizations that operate statewide or across the wider
-    Colorado River Basin reach far beyond this map&rsquo;s edges; each one
-    says so beside its name. Every organization is also listed below, with its
-    service area described in text.
+    territory &ndash; for statewide and basin-scale organizations the map
+    zooms out to show their full extent within Colorado. The house button
+    returns to the watershed. Every organization is also listed below, with
+    its service area described in text; only organizations serving the
+    Roaring Fork watershed appear on this page.
   </p>
   <iframe
     class="map-panel__frame"

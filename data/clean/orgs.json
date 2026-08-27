@@ -48,7 +48,7 @@
     "caveat": "No separate boundary file - operates across the whole Roaring Fork Watershed."
   },
   {
-    "org_name": "RWAPA",
+    "org_name": "Ruedi Water and Power Authority",
     "org_short": "RWAPA",
     "section": "Local watershed organizations",
     "category": "Governance & Policy",
@@ -80,7 +80,7 @@
     "caveat": "Per Tim Braun (Pitkin County), the HUC-8 boundary is the \"official\" Healthy Rivers boundary."
   },
   {
-    "org_name": "CVEPA (Crystal Valley Environmental Protection Association)",
+    "org_name": "Crystal Valley Environmental Protection Association",
     "org_short": "CVEPA",
     "section": "Local watershed organizations",
     "category": "Conservation & Advocacy",
@@ -109,7 +109,8 @@
     "website": "coloradobasinroundtable.org",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in."
+    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in.",
+    "extent_id": "cbrt_basin"
   },
   {
     "org_name": "Colorado Water Conservation Board",
@@ -125,7 +126,8 @@
     "website": "cwcb.colorado.gov",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in."
+    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in.",
+    "extent_id": "state_colorado"
   },
   {
     "org_name": "Colorado River District",
@@ -141,7 +143,8 @@
     "website": "coloradoriverdistrict.org",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in."
+    "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in.",
+    "extent_id": "crd_district"
   },
   {
     "org_name": "Roaring Fork Water and Sanitation District",
@@ -256,7 +259,7 @@
     "caveat": "Real official municipal boundary from Colorado DOLA, 7/28/26. Straddles Eagle/Pitkin/Garfield county lines - included since RFWSD/MVMD both serve it."
   },
   {
-    "org_name": "Division of Water Resources (DWR)",
+    "org_name": "Division of Water Resources",
     "org_short": "DWR",
     "section": "Basin and statewide organizations",
     "category": "Governance & Policy",

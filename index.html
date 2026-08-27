@@ -349,17 +349,10 @@
     [-107.46575, 38.97765], // southwest
     [-106.48108, 39.56394]  // northeast
   ];
-  // Panning limit. Deliberately looser than the watershed: maxBounds caps how
-  // far you can zoom out (the visible area must stay inside it), so a box that
-  // hugs the watershed makes it impossible to ever see the whole thing at once
-  // on a wide, short viewport - the width fills the box while the top and
-  // bottom of the watershed are still cropped. The real zoom floor is set from
-  // the actual fitted zoom in fitToWatershed() below, which adapts to whatever
-  // size the map is rendered at.
-  const VIEW_LIMIT = [
-    [-108.05, 38.70],
-    [-105.90, 39.85]
-  ];
+  // How much slack to leave around the fitted view when setting the panning
+  // limit, as a fraction of the visible span. Enough to nudge the map without
+  // being able to wander off the data.
+  const PAN_SLACK = 0.05;
 
   const map = new maplibregl.Map({
     container: 'map',
@@ -381,10 +374,8 @@
     // second, so it should never open anywhere else.
     bounds: WATERSHED_BOUNDS,
     fitBoundsOptions: { padding: 20 },
-    // Project scope is the Roaring Fork only and every boundary is clipped to
-    // it, so panning away just shows shapes cut off at an arbitrary edge.
-    // maxBounds stops the wandering; the zoom floor is set in fitToWatershed().
-    maxBounds: VIEW_LIMIT,
+    // No maxBounds here on purpose. fitToWatershed() sets it from the fitted
+    // view once the container has been measured - see the note there.
     maxZoom: 15,
     attributionControl: true
   });
@@ -570,32 +561,65 @@
     activePopup = null;   // the early-returning close handler skips this
   }
 
-  // Frame the watershed and make that the furthest you can zoom out.
+  // Frame the watershed, then derive BOTH constraints from that fitted view.
   //
-  // The floor has to be measured rather than hardcoded: the zoom at which the
-  // watershed fits depends on the container's size and aspect, which differ
-  // between desktop, phone, and an iframe embed of unknown dimensions. So fit
-  // first, read the resulting zoom, and use that as minZoom. Re-run on resize
-  // so a window drag or orientation change can't leave the floor wrong.
+  // Order matters, and getting it wrong is what cropped the map for a month.
+  // A hardcoded maxBounds silently wins over fitBounds: MapLibre will not let
+  // the viewport show more ground than the box allows, so on a wide, short
+  // container - where fitting the watershed's height means showing a great
+  // deal of extra longitude - it zooms IN until the width fits, and that extra
+  // zoom cuts the top and bottom off the watershed. Measured on the live site
+  // at 1792x460: fitBounds asked for zoom 8.579 and the map settled at 9.195,
+  // clipping 0.08 degrees of latitude off each end. The failure is silent -
+  // the map looks fine, just wrong.
+  //
+  // So neither constraint is a constant. Clear both, fit, then set both from
+  // what the fit actually produced. maxBounds then contains the fitted view by
+  // construction and cannot fight it again, at any container size.
   function fitToWatershed() {
-    // Clear any previous floor first, or it clamps the fit we're about to make.
     map.setMinZoom(0);
-    // Un-animated, so this applies immediately and getZoom() below reads the
-    // fitted value. Deliberately not waiting on 'moveend': on first load the
-    // map is already at these bounds via the constructor's `bounds` option, so
-    // there's no movement and the event never fires.
+    map.setMaxBounds(null);
+
+    // Un-animated, so it applies immediately and getZoom()/getBounds() below
+    // read the fitted values. Deliberately not waiting on 'moveend': on first
+    // load the map is already at these bounds via the constructor's `bounds`
+    // option, so there is no movement and the event never fires.
     map.fitBounds(WATERSHED_BOUNDS, { padding: 24, animate: false });
+
     map.setMinZoom(map.getZoom());
+
+    // Panning limit: the fitted view plus a little slack. Project scope is the
+    // Roaring Fork and every boundary is clipped to it, so panning past this
+    // only shows shapes cut off at an arbitrary edge.
+    const v = map.getBounds();
+    const lonPad = (v.getEast() - v.getWest()) * PAN_SLACK;
+    const latPad = (v.getNorth() - v.getSouth()) * PAN_SLACK;
+    map.setMaxBounds([
+      [v.getWest() - lonPad, v.getSouth() - latPad],
+      [v.getEast() + lonPad, v.getNorth() + latPad]
+    ]);
   }
 
   map.on('load', () => fitToWatershed());
 
   // Debounced so dragging a window edge doesn't thrash the fit.
+  // Both constraints are derived from the container's size, so both are wrong
+  // the moment it changes. Debounced because a window drag fires continuously.
   let resizeTimer;
-  window.addEventListener('resize', () => {
+  const refit = () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => fitToWatershed(), 150);
-  });
+  };
+  window.addEventListener('resize', refit);
+
+  // Belt and braces for the embedded case. The iframe's own window fires
+  // 'resize' when the frame element changes size, but a ResizeObserver also
+  // catches the container being restyled without the viewport moving - a
+  // collapsing panel, say. Refitting doesn't change the element's size, so
+  // there's no feedback loop.
+  if (window.ResizeObserver) {
+    new ResizeObserver(refit).observe(map.getContainer());
+  }
 
   // Navigation controls
   map.addControl(new maplibregl.NavigationControl(), 'top-right');

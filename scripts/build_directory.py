@@ -322,7 +322,19 @@ def render_caucus_entry(name, area, note, site):
     return "\n".join(parts)
 
 
-MAP_EMBED = """<div class="map-panel">
+# Visible on every build until the county adopts the page. Two audiences: Tim
+# and Gwen, so review arrives as "is this the right content and behavior"
+# rather than notes on fonts that will be replaced by the county theme anyway;
+# and anyone who stumbles onto the GitHub Pages URL before launch, so the page
+# says what it is. Delete this constant (and the .prototype-note CSS rule) at
+# handoff.
+PROTOTYPE_NOTE = """<p class="prototype-note">
+  <strong>Working prototype.</strong> Content and function are under review
+  with Pitkin County Healthy Rivers; the visual design will change to match
+  the county site when adopted.
+</p>"""
+
+MAP_EMBED = PROTOTYPE_NOTE + """<div class="map-panel">
   <p class="map-panel__intro" id="map-intro">
     Interactive map of water management service areas in the Roaring Fork
     watershed. Click any colored area for the organizations that serve it, or

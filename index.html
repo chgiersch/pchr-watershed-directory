@@ -720,14 +720,20 @@
     const hint = document.createElement('div');
     hint.className = 'map-hint';
     hint.setAttribute('aria-hidden', 'true');
-    hint.textContent = 'Click any colored area to see who serves it';
+    hint.textContent = 'Click anywhere in the watershed to see who serves that point';
     map.getContainer().appendChild(hint);
-    const dismissHint = () => {
+    // Only USER interaction dismisses. The map's own load sequence fires
+    // zoomstart programmatically (fitToWatershed jumps the camera), which
+    // dismissed the chip before anyone saw it. MapLibre marks user-initiated
+    // events with originalEvent; programmatic camera moves have none.
+    const dismissHint = (e) => {
+      if (e && e.type !== 'click' && !e.originalEvent) return;
       if (!hint.parentNode) return;
       hint.classList.add('map-hint--gone');
       setTimeout(() => hint.remove(), 350);
+      ['click', 'dragstart', 'zoomstart'].forEach(ev => map.off(ev, dismissHint));
     };
-    ['click', 'dragstart', 'zoomstart'].forEach(e => map.once(e, dismissHint));
+    ['click', 'dragstart', 'zoomstart'].forEach(ev => map.on(ev, dismissHint));
   }
   map.addControl({
     onAdd() {

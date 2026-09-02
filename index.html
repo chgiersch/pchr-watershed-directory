@@ -720,7 +720,7 @@
     const hint = document.createElement('div');
     hint.className = 'map-hint';
     hint.setAttribute('aria-hidden', 'true');
-    hint.textContent = 'Click any colored area to see who serves it';
+    hint.textContent = 'Click anywhere in the watershed to see who serves that point';
     map.getContainer().appendChild(hint);
     // Only USER interaction dismisses. The map's own load sequence fires
     // zoomstart programmatically (fitToWatershed jumps the camera), which

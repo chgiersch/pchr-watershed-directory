@@ -1,45 +1,95 @@
 /* Organization directory - Pitkin County Healthy Rivers
  *
- * Kept separate from the markup on purpose. When this ports into WordPress the
- * HTML goes into the page and these rules go into the theme or a custom-CSS
- * block - two independent moves, so they shouldn't be tangled together.
+ * This stylesheet is the single source of styling for both deployments:
+ * the standalone GitHub Pages build links it directly, and the WordPress
+ * bundle (scripts/build_directory.py --wordpress) inlines it into the
+ * page's HTML block. Edit here and regenerate - never edit the copy
+ * inside the WordPress block, which is overwritten on every rebuild.
  *
- * Colors are declared as custom properties at the top. If the county theme
- * already defines its own, delete the :root block and the directory inherits
- * theirs - that's the intended way to make this match the site rather than
- * fighting it.
+ * Do NOT delete the :root block: every rule below depends on the --wmd-*
+ * variables it defines, and nothing else on any host page defines them.
+ * To retheme, change the values there (colors marked "measured" trace to
+ * the county theme - see the note above :root).
  *
- * Contrast: every text/background pair below was checked against WCAG 2.1 AA
- * (4.5:1 for body text, 3:1 for large). The muted greys are the ones to be
- * careful with if you darken or lighten the backgrounds.
+ * Contrast: every text/background pair below was checked against WCAG 2.1
+ * AA (4.5:1 for body text, 3:1 for large text). The muted greys are the
+ * ones to re-check if backgrounds are darkened or lightened.
  */
 
+/* Theme alignment. Values below marked "measured" were taken from computed
+   styles on the live pitkincountyrivers.com homepage, 2026-08-28: body
+   Montserrat 14px #121212, headings Kameron 700 #669256, links #002e4c.
+   Re-measure if the site theme changes; these do not update automatically.
+   The heading green is applied only where WCAG 2.1 AA large-text contrast
+   permits - see the note at .dir-section__title. */
+/* All custom properties are prefixed --wmd- (water management directory).
+   Custom properties are global to the page: inside WordPress this
+   stylesheet shares one namespace with the county theme and every plugin,
+   and the LAST definition of a shared name wins page-wide. Generic names
+   like --gap or --surface are exactly what a future theme update would
+   also define. The prefix is feature-scoped rather than organization-
+   scoped (--pchr-) so a second custom PCHR page can never collide with
+   this one. */
 :root {
-  --navy: #002e4c;
-  --sky: #0096dc;
-  --leaf: #6ebe64;
-  --ink: #1a1a1a;
-  --muted: #5c6b75;      /* 5.5:1 on white */
-  --rule: #dce4e8;
-  --surface: #f4f7f9;
-  --paper: #ffffff;
+  --wmd-navy: #002e4c;
+  --wmd-sky: #0096dc;
+  --wmd-leaf: #6ebe64;
+  --wmd-hr-green: #669256;   /* measured theme heading color; 3.6:1 on white - large text only */
+  --wmd-ink: #1a1a1a;
+  --wmd-muted: #5c6b75;      /* 5.5:1 on white */
+  --wmd-rule: #dce4e8;
+  --wmd-surface: #f4f7f9;
+  --wmd-paper: #ffffff;
 
-  --font-head: 'Kameron', Georgia, serif;
-  --font-body: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  --wmd-font-head: 'Kameron', Georgia, serif;
+  --wmd-font-body: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
 
-  --measure: 68ch;       /* comfortable reading width */
-  --gap: 1.5rem;
+  --wmd-measure: 68ch;       /* comfortable reading width */
+  --wmd-gap: 1.5rem;
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+/* Scoped to this feature's containers. A universal selector here would
+   force border-box on the entire host page when embedded, breaking any
+   theme component that depends on content-box sizing. */
+.prototype-note, .prototype-note *,
+.map-panel, .map-panel *,
+.directory, .directory *, .directory *::before, .directory *::after,
+.page-footer, .page-footer * { box-sizing: border-box; }
 
+/* Typography is scoped to this feature's own containers, never to body.
+   When this stylesheet is embedded in WordPress, a body rule would restyle
+   the host page's header, footer, and navigation. On the standalone page
+   these four selectors cover all visible content, so nothing is lost.
+   15px is a deliberate middle ground between the theme's 14px body text and
+   this stylesheet's original 16px - readable for a text-heavy directory
+   without visibly outsizing the surrounding site. */
+.prototype-note,
+.map-panel,
+.directory,
+.page-footer {
+  font-family: var(--wmd-font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--wmd-ink);
+}
+
+/* Needed by the standalone page. When embedded, these do reach the host
+   page's body, but margin and background match the measured theme, so they
+   have no visible effect. Do not add further body rules without the same
+   analysis.
+
+   overflow-x is the exception, and it is deliberate: the host theme sets
+   overflow-x: hidden on body to suppress horizontal scrollbars, and an
+   overflow-hidden body disables position: sticky for every descendant -
+   which silently broke this page's sticky map (verified on the live
+   preview, 2026-09-02: panel computed sticky but scrolled away).
+   overflow-x: clip performs the same visual clipping WITHOUT creating a
+   scroll container, so stickiness is preserved. Identical behavior to
+   hidden in every other respect; supported by all evergreen browsers. */
 body {
   margin: 0;
-  font-family: var(--font-body);
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--ink);
-  background: var(--paper);
+  background: var(--wmd-paper);
+  overflow-x: clip;
 }
 
 /* Keyboard users land here first and can jump straight past the map to the
@@ -50,7 +100,7 @@ body {
   top: 0;
   z-index: 100;
   padding: 0.75rem 1.25rem;
-  background: var(--navy);
+  background: var(--wmd-navy);
   color: #fff;
   text-decoration: none;
 }
@@ -60,12 +110,12 @@ body {
 }
 
 .page-header {
-  background: var(--navy);
+  background: var(--wmd-navy);
   color: #fff;
   padding: 1.5rem 1.25rem;
 }
 .page-header h1 {
-  font-family: var(--font-head);
+  font-family: var(--wmd-font-head);
   font-size: clamp(1.35rem, 3vw, 1.9rem);
   margin: 0;
   line-height: 1.2;
@@ -76,11 +126,11 @@ body {
   opacity: 0.8;
 }
 
-/* Prototype banner. Visible but quiet - it should register once, not compete
-   with the content it's qualifying. Amber family rather than the site palette
-   so it clearly isn't part of the design being reviewed. Text at 7.2:1 on
-   this background. DELETE this rule together with PROTOTYPE_NOTE in
-   build_directory.py at handoff. */
+/* Development-copy notice, shown on the standalone GitHub Pages build only
+   (never in the WordPress bundle - the generator omits the markup there).
+   It directs anyone who reaches the Pages copy to the official county page.
+   Amber, outside the site palette, so it reads as a notice rather than
+   content. Text at 7.2:1 on this background. */
 .prototype-note {
   margin: 0;
   padding: 0.6rem 1.25rem;
@@ -91,31 +141,65 @@ body {
 }
 
 /* ---- Sticky map ---- */
-/* Sticks while the directory scrolls beneath it, so the map stays available
-   without following you as a floating overlay. Height is capped in vh so it
-   can never eat the whole viewport on a short screen or at high zoom. */
+/* The panel holds ONLY the iframe and is the sticky element; the intro
+   paragraph lives outside it in the markup, so it scrolls away while the
+   map pins. The intro cannot live inside the sticky element: position
+   sticky travels only within its parent, and a parent that is merely
+   intro+map tall unsticks after a few pixels.
+
+   The panel is an opaque surround rather than a bare edge: it pins flush
+   to the window top, and its padding puts breathing room around the
+   framed map while directory content scrolls cleanly away beneath it. */
 .map-panel {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--paper);
-  border-bottom: 1px solid var(--rule);
+  background: var(--wmd-paper);
+  border-bottom: 1px solid var(--wmd-rule);
+  padding: 0.75rem 1rem;
 }
 
+/* Full width rather than the reading measure: this is a short instruction
+   block above the map, and capping it at 68ch stacked it five lines tall -
+   vertical space the pinned map needs. Long-line readability matters less
+   for two sentences than the height does. */
 .map-panel__intro {
-  max-width: var(--measure);
   margin: 0;
   padding: 0.75rem 1.25rem;
   font-size: 0.8125rem;
-  color: var(--muted);
+  color: var(--wmd-muted);
 }
+
+/* The folded how-to under the intro sentence. Quiet by design - reference
+   copy for whoever wants it, one line of height for everyone else. */
+.map-help {
+  padding: 0 1.25rem 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--wmd-muted);
+}
+.map-help summary {
+  cursor: pointer;
+  width: fit-content;
+  color: var(--wmd-navy);
+  font-weight: 600;
+}
+.map-help summary:focus-visible {
+  outline: 3px solid var(--wmd-sky);
+  outline-offset: 2px;
+}
+.map-help ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.4rem;
+}
+.map-help li + li { margin-top: 0.35rem; }
 
 .map-panel__frame {
   display: block;
   width: 100%;
   height: min(52vh, 460px);
   min-height: 260px;
-  border: 0;
+  border: 1px solid var(--wmd-rule);
+  border-radius: 8px;
 }
 
 /* Sticky positioning plus a tall map leaves no room to read on a phone, so
@@ -138,32 +222,43 @@ body {
   margin: 0 auto;
 }
 
+/* Sections separate by whitespace and the green heading alone - no rule.
+   The last entry's own bottom hairline already closes each list, and a
+   second full-width border above the next heading read as a dangling
+   double line. Headings-plus-air is also the county homepage's idiom.
+   The gap must stay visibly larger than the ~0.9rem row rhythm within a
+   list, or adjacent sections merge into one. */
 .dir-section + .dir-section {
-  margin-top: 3rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--rule);
+  margin-top: 2.5rem;
 }
 
+/* Section titles use the theme's heading green. At 3.6:1 against white this
+   color passes WCAG 2.1 AA only under the large-text threshold (3:1 for bold
+   text at 18.66px and above); the clamp minimum of 1.35rem keeps the title
+   above that threshold at any viewport. Organization names (.org__name,
+   17px) fall under the 4.5:1 body-text requirement, which this green fails -
+   they remain navy for that reason. Do not apply --wmd-hr-green to text below
+   the large-text threshold. */
 .dir-section__title {
-  font-family: var(--font-head);
-  font-size: clamp(1.15rem, 2.4vw, 1.5rem);
-  color: var(--navy);
-  margin: 0 0 0.5rem;
+  font-family: var(--wmd-font-head);
+  font-size: clamp(1.35rem, 2.4vw, 1.5rem);
+  color: var(--wmd-hr-green);
+  margin: 0 0 0.35rem;
   line-height: 1.25;
 }
 
 .dir-section__intro {
-  max-width: var(--measure);
-  margin: 0 0 var(--gap);
-  color: var(--muted);
+  max-width: var(--wmd-measure);
+  margin: 0 0 1rem;
+  color: var(--wmd-muted);
   font-size: 0.9375rem;
 }
 
 .dir-section__note {
-  max-width: var(--measure);
-  margin: var(--gap) 0 0;
+  max-width: var(--wmd-measure);
+  margin: var(--wmd-gap) 0 0;
   font-size: 0.875rem;
-  color: var(--muted);
+  color: var(--wmd-muted);
   font-style: italic;
 }
 
@@ -176,7 +271,7 @@ body {
 }
 
 .org {
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px solid var(--wmd-rule);
   /* Clears the selected-entry bar below, which is drawn as a 4px inset shadow
      on this same element - without it the disclosure chevron sits right on
      top of the bar. Applied to every entry, not just the selected one, so
@@ -184,7 +279,7 @@ body {
   padding-left: 0.6rem;
 }
 .org:first-of-type {
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--wmd-rule);
 }
 
 /* The whole summary row is the click target, so it needs to look like one. */
@@ -198,7 +293,7 @@ body {
 }
 .org__summary::-webkit-details-marker { display: none; }
 
-.org__summary:hover { background: var(--surface); }
+.org__summary:hover { background: var(--wmd-surface); }
 
 /* Custom marker that rotates when open. A triangle rather than +/- because it
    reads as "expandable" without needing a legend. */
@@ -208,8 +303,8 @@ body {
   width: 0.5rem;
   height: 0.5rem;
   margin-top: 0.35rem;
-  border-right: 2px solid var(--sky);
-  border-bottom: 2px solid var(--sky);
+  border-right: 2px solid var(--wmd-sky);
+  border-bottom: 2px solid var(--wmd-sky);
   transform: rotate(-45deg);
   transition: transform 0.15s ease;
 }
@@ -230,10 +325,10 @@ body {
   justify-content: space-between;
   gap: 0.75rem;
   margin: 0;
-  font-family: var(--font-head);
+  font-family: var(--wmd-font-head);
   font-size: 1.0625rem;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--wmd-navy);
   line-height: 1.35;
 }
 
@@ -254,10 +349,10 @@ body {
    CSS because it's decoration; the text alone has to carry the meaning for
    screen readers, which hear "name, extent, offers funding". */
 .org__extent {
-  font-family: var(--font-body);
+  font-family: var(--wmd-font-body);
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--wmd-muted);
 }
 .org__extent::before {
   content: '\00B7\00A0';   /* middot + no-break space */
@@ -267,7 +362,7 @@ body {
    readers, visually quieter than the name it follows. */
 .org__abbr {
   font-weight: 400;
-  color: var(--muted);
+  color: var(--wmd-muted);
 }
 
 /* Surfaced on the closed row so someone hunting for grant sources can scan
@@ -309,7 +404,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--muted);
+  color: var(--wmd-muted);
   margin-right: 0.35rem;
 }
 
@@ -318,6 +413,19 @@ body {
   font-size: 0.9375rem;
   color: #333;
 }
+
+/* Year-labeled focus block. The year in the label is the freshness marker -
+   see the note at priorities rendering in build_directory.py. */
+.org__priorities {
+  margin: 0 0 0.875rem;
+  font-size: 0.9375rem;
+  color: #333;
+}
+.org__priorities ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.3rem;
+}
+.org__priorities li + li { margin-top: 0.3rem; }
 
 .org__meta {
   margin: 0 0 0.75rem;
@@ -354,10 +462,15 @@ body {
 
 /* Solid, because this is the primary action in an entry - the one thing that
    connects the text back to the map. The website is secondary and outlined. */
+/* The hidden attribute must win over the class's display - the generator
+   emits buttons hidden until the link script reveals them (see SHOW_ON_MAP
+   in build_directory.py). Without this guard the class re-shows them. */
+.org__show[hidden] { display: none; }
+
 .org__show {
   color: #fff;
-  background: var(--navy);
-  border: 1.5px solid var(--navy);
+  background: var(--wmd-navy);
+  border: 1.5px solid var(--wmd-navy);
 }
 .org__show:hover { background: #00405f; border-color: #00405f; }
 
@@ -368,28 +481,32 @@ body {
 }
 
 .org__site {
-  color: var(--navy);
+  color: var(--wmd-navy);
   background: transparent;
-  border: 1.5px solid var(--navy);
+  border: 1.5px solid var(--wmd-navy);
 }
 .org__site:hover,
 .org__site:focus-visible {
-  background: var(--navy);
+  background: var(--wmd-navy);
   color: #fff;
 }
 
 /* A focus ring in the navy on navy button would vanish, so the offset pushes
    it clear of the fill. */
 .org__show:focus-visible {
-  outline: 3px solid var(--sky);
+  outline: 3px solid var(--wmd-sky);
   outline-offset: 2px;
 }
 
-/* Visible focus everywhere. Never remove this without replacing it - it's the
-   only way a keyboard user can tell where they are. */
-a:focus-visible,
+/* Visible keyboard focus, scoped to this feature's links only - a bare
+   a:focus-visible would restyle the focus ring of every link on the host
+   page. Never remove without an equivalent replacement; a visible focus
+   indicator is a WCAG 2.4.7 requirement. */
+.map-panel a:focus-visible,
+.directory a:focus-visible,
+.page-footer a:focus-visible,
 .org:focus-visible {
-  outline: 3px solid var(--sky);
+  outline: 3px solid var(--wmd-sky);
   outline-offset: 2px;
 }
 
@@ -402,8 +519,17 @@ a:focus-visible,
    the UA default in the pointer case - the ring itself is never removed for
    keyboard users, which would fail WCAG 2.4.7. */
 .org__summary:focus { outline: none; }
+
+/* Applied by the link script for the moment it programmatically focuses an
+   entry after a MAP click. That click happens in the iframe's document, so
+   the host's :focus-visible heuristic sees no pointer activity and would
+   paint a ring at a mouse user. The script removes the class on the first
+   keydown or blur, so keyboard users' rings are unaffected. Double class
+   keeps this above the ring rule's specificity regardless of source order. */
+.org__summary.org__summary--map-focus:focus-visible { outline: none; }
+
 .org__summary:focus-visible {
-  outline: 3px solid var(--sky);
+  outline: 3px solid var(--wmd-sky);
   outline-offset: -3px;
   border-radius: 3px;
 }
@@ -412,18 +538,18 @@ a:focus-visible,
    postMessage wiring lands. Uses a left bar plus a background shift rather
    than color alone, so it doesn't rely on color perception. */
 .org.is-selected {
-  border-color: var(--sky);
-  box-shadow: inset 4px 0 0 var(--sky);
+  border-color: var(--wmd-sky);
+  box-shadow: inset 4px 0 0 var(--wmd-sky);
   background: #eef7fd;
 }
 
 .page-footer {
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--wmd-rule);
   padding: 1.5rem 1.25rem 2.5rem;
 }
 .page-footer p {
-  max-width: var(--measure);
+  max-width: var(--wmd-measure);
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--muted);
+  color: var(--wmd-muted);
 }

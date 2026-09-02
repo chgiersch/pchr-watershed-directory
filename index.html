@@ -281,6 +281,54 @@
       font-size: 13px;
     }
 
+    /* Bridge line before the wider-extent sections. Same 5.4:1 grey as the
+       section labels; italic so it reads as a note, not another heading. */
+    .popup-note {
+      font-size: 11px;
+      font-style: italic;
+      color: #5c6b75;
+      margin: 10px 0 2px;
+    }
+
+    /* One-time hint chip over the map. aria-hidden - it duplicates guidance
+       that keyboard and screen-reader users already receive from the page's
+       instructions element, and a transient chip is the wrong channel for
+       them anyway. White on navy: 12.3:1. */
+    .map-hint {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 46, 76, 0.88);
+      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      z-index: 5;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      white-space: nowrap;
+    }
+    .map-hint--gone { opacity: 0; }
+
+    /* Shown only when the data fetch fails - see the load .catch. White on
+       navy: 12.3:1. Centred over the (empty) map rather than replacing it,
+       so the failure is unmistakable. */
+    .map-load-error {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 34em;
+      background: rgba(0, 46, 76, 0.92);
+      color: #ffffff;
+      padding: 14px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      z-index: 6;
+    }
+
 
     .map-note {
       font-size: 12px;
@@ -662,6 +710,25 @@
   // so they're looked up at click time via window-scope indirection set up
   // there (goHome). Until data loads the button just re-fits the view.
   let goHome = () => fitToWatershed({ animate: true });
+
+  // First-interaction hint: instruction placed where the uncertainty is,
+  // for exactly as long as it's needed. Any real interaction dismisses it -
+  // by then the click has taught what the chip was going to say. It never
+  // returns within a page view, and it's aria-hidden because the page's own
+  // instructions carry this guidance for assistive tech (see .map-hint CSS).
+  {
+    const hint = document.createElement('div');
+    hint.className = 'map-hint';
+    hint.setAttribute('aria-hidden', 'true');
+    hint.textContent = 'Click any colored area to see who serves it';
+    map.getContainer().appendChild(hint);
+    const dismissHint = () => {
+      if (!hint.parentNode) return;
+      hint.classList.add('map-hint--gone');
+      setTimeout(() => hint.remove(), 350);
+    };
+    ['click', 'dragstart', 'zoomstart'].forEach(e => map.once(e, dismissHint));
+  }
   map.addControl({
     onAdd() {
       const container = document.createElement('div');
@@ -881,7 +948,7 @@
       // District (CRD), and the state (CWCB). These draw ONLY while such an
       // org is selected - a state view with permanently colored extents would
       // read as an inventory of Colorado's water organizations, which this
-      // map is not (Gwen's scope concern, 8/27/26). Appearing in response to
+      // map is not (program-coordinator review, 8/27/26). Appearing in response to
       // the reader's own click, titled with one org's extent, claims nothing
       // broader.
       //
@@ -1384,8 +1451,17 @@
                serve it.</div>
              </div>`;
 
+        // Makes explicit what the section structure only implied: the
+        // watershed-wide and statewide groups below aren't context, they all
+        // genuinely serve the clicked point too. Skipped on open-ground
+        // clicks, where the no-service-area message already says it.
+        const alsoNote = localOrgs.length
+          ? '<div class="popup-note">Every organization below also serves this location:</div>'
+          : '';
+
         return [
           firstSection,
+          alsoNote,
           section('Roaring Fork watershed wide', watershedOrgs),
           section('State or basin wide', regionalOrgs)
         ].join('');
@@ -1694,7 +1770,21 @@
         }
       });
 
-    }).catch(err => console.error('Failed to load map layers:', err));
+    }).catch(err => {
+      console.error('Failed to load map layers:', err);
+      // A visitor must never face a silently blank map. The message points
+      // at the directory, which carries every fact the map would have shown -
+      // the text equivalent is the fallback by design, so say so. Announced
+      // for screen reader users via the existing live region.
+      const notice = document.createElement('div');
+      notice.className = 'map-load-error';
+      notice.setAttribute('role', 'alert');
+      notice.textContent = 'The map could not load. Every organization and '
+        + 'its service area is described in the directory below.';
+      map.getContainer().appendChild(notice);
+      announce('The map could not load. All information is available in the '
+        + 'directory below the map.');
+    });
   });
 </script>
 

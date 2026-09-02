@@ -6,9 +6,12 @@
  * file absent, the directory still works as a directory and the map still
  * works as a map. They just stop talking to each other.
  *
- * TO USE IN WORDPRESS
- *   Enqueue this file, or paste it into a script block on the page. Set
- *   MAP_ORIGIN below to wherever the map is actually served from.
+ * DEPLOYMENT
+ *   The WordPress bundle (scripts/build_directory.py --wordpress) inlines
+ *   this file automatically - edit here and regenerate, never in the page.
+ *   The standalone GitHub Pages build loads it as a separate script. If the
+ *   map is ever served from a new origin, update MAP_ORIGIN below AND the
+ *   ALLOWED_ORIGINS list in the map's own index.html - both ends check.
  *
  * BEHAVIOUR
  *   "Show on map" in an entry   ->  map frames and highlights that area
@@ -30,6 +33,13 @@
   var frame = document.querySelector('.map-panel__frame');
   var directory = document.getElementById('directory');
   if (!frame || !directory) return;
+
+  // Reveal the "Show on map" buttons - they are emitted hidden and only
+  // useful once this script's handlers exist. Reaching this line proves the
+  // guards above passed; a script that never runs leaves no dead controls.
+  directory.querySelectorAll('[data-show-on-map]').forEach(function (b) {
+    b.removeAttribute('hidden');
+  });
 
   // Allow the map to be served from the same origin as the page during local
   // development, without having to edit MAP_ORIGIN.
@@ -121,6 +131,9 @@
       // over the top of the page and would cover the entry title. The offset
       // below puts the title just clear of it.
       window.requestAnimationFrame(function () {
+        // The sticky element is .map-panel, which holds only the iframe.
+        // Its height is how much of the viewport the pinned map covers, and
+        // the scroll target must clear it.
         var panel = document.querySelector('.map-panel');
         var overlap = 0;
         if (panel && window.getComputedStyle(panel).position === 'sticky') {
@@ -135,8 +148,24 @@
 
         // Move focus to the entry so keyboard and screen reader users land
         // where the scroll just went, instead of being left behind.
+        //
+        // Quiet-focus dance: the originating click happened in the IFRAME's
+        // document, so the host document has no recent pointer activity and
+        // the browser's :focus-visible heuristic treats this programmatic
+        // focus as keyboard-like - painting a focus ring at a mouse user.
+        // The temporary class suppresses that one ring; the first real
+        // keyboard press (or leaving the element) removes the class, so a
+        // keyboard user's ring returns immediately - required by WCAG 2.4.7.
         var summary = target.querySelector('summary');
-        if (summary) summary.focus({ preventScroll: true });
+        if (summary) {
+          summary.classList.add('org__summary--map-focus');
+          summary.focus({ preventScroll: true });
+          var restore = function () {
+            summary.classList.remove('org__summary--map-focus');
+          };
+          summary.addEventListener('blur', restore, { once: true });
+          summary.addEventListener('keydown', restore, { once: true });
+        }
       });
     }
   });

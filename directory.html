@@ -16,24 +16,32 @@
   <p>Pitkin County Healthy Rivers &middot; Roaring Fork Watershed</p>
 </header>
 
+<p class="prototype-note">
+  <strong>Development copy.</strong> The official version of this page is
+  published by Pitkin County Healthy Rivers at pitkincountyrivers.com.
+</p>
+
 <!-- Sticky map. The visible intro doubles as the iframe's description: it
      tells everyone - not only screen reader users - that nothing here is
      map-only, which is what makes the canvas acceptable under WCAG 2.1 AA. -->
-<p class="prototype-note">
-  <strong>Working prototype.</strong> Content and function are under review
-  with Pitkin County Healthy Rivers; the visual design will change to match
-  the county site when adopted.
-</p><div class="map-panel">
-  <p class="map-panel__intro" id="map-intro">
-    Interactive map of water management service areas in the Roaring Fork
-    watershed. Click any colored area for the organizations that serve it, or
-    press &ldquo;Show on map&rdquo; in a listing below to highlight its
-    territory &ndash; for statewide and basin-scale organizations the map
-    zooms out to show their full extent within Colorado. The house button
-    returns to the watershed. Every organization is also listed below, with
-    its service area described in text; only organizations serving the
-    Roaring Fork watershed appear on this page.
-  </p>
+<p class="map-panel__intro" id="map-intro">
+    Interactive map and directory of water management service areas in the
+    Roaring Fork watershed; only organizations serving the watershed appear
+    on this page.
+</p>
+<details class="map-help">
+  <summary>How to use this page</summary>
+  <ul>
+    <li>Click any colored area on the map to see the organizations that
+        serve it, then select one to jump to its full entry below.</li>
+    <li>Press &ldquo;Show on map&rdquo; in any listing to highlight that
+        organization&rsquo;s territory &ndash; statewide and basin
+        organizations zoom out to their full extent within Colorado.</li>
+    <li>The house button on the map returns to the Roaring Fork
+        watershed view.</li>
+  </ul>
+</details>
+<div class="map-panel">
   <iframe
     class="map-panel__frame"
     src="index.html"
@@ -55,12 +63,17 @@
       <p class="org__scope"><span class="org__label">Service area</span> Crystal River watershed</p>
       <p class="org__mission">Protect and defend the Crystal River through vigilant grassroots action, and maintain and improve water quality and quantity.</p>
       <p class="org__desc">Volunteer grassroots organization with an executive committee of three and a board of nine. CVEPA stopped the development of an alpine ski area above Marble, helped oversee the reclamation of the Coal Basin coal mine, helped prevent a proposed dam from destroying the upper Crystal River valley, and continuously works to ensure public access to public lands around the valley. Hosts an annual meeting and other meetings open to the public.</p>
+      <div class="org__priorities"><span class="org__label">2026 priorities</span><ul>
+        <li>Supporting the Wild and Scenic designation process for the Crystal River.</li>
+        <li>Monitoring Yule Creek to establish a water-quality baseline and track the quarry&#x27;s impact.</li>
+        <li>Coal Basin: methane project funding has ended but more work is needed; Coal Creek is stable through revegetation and culverts, with continued monitoring.</li>
+      </ul></div>
       <dl class="org__meta">
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Donations and membership dues.</dd></div>
         <div class="org__meta-item"><dt class="org__label">Offers funding</dt><dd>a small amount is available for local projects. Contact CVEPA for details.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://cvepa.org" rel="noopener">cvepa.org</a>
       </p>
     </div>
@@ -78,7 +91,7 @@
         <div class="org__meta-item"><dt class="org__label">Offers funding</dt><dd>funding available for projects including safeguarding water rights, improving stream flows, supporting riparian and wildlife habitat, and advancing watershed-wide benefits. See grant information on their website.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://pitkincountyrivers.com" rel="noopener">pitkincountyrivers.com</a>
       </p>
     </div>
@@ -91,11 +104,16 @@
       <p class="org__scope"><span class="org__label">Service area</span> Roaring Fork watershed</p>
       <p class="org__mission">Inspiring people to explore, value, and protect the Roaring Fork Watershed.</p>
       <p class="org__desc">Founded in 1996, one of the largest watershed organizations in Colorado. A trusted local resource providing school and community-based Watershed Education programs, watershed science to inform policy projects and decisions, regional watershed planning, water resource policy initiatives, and stream management and restoration. RFC is a water information clearinghouse within the Roaring Fork Watershed, matching people with concerns to the right resources. They are also a liaison between regulatory agencies and the public, translating complex water issues to the community. Along with other groups they are trying to keep as much water in the Roaring Fork watershed as possible. Holds conservation easements adjacent to the rivers.</p>
+      <div class="org__priorities"><span class="org__label">2026 priorities</span><ul>
+        <li>Drought Resiliency Project: test plots on three ranches using deep aeration and biochar, with soil-moisture results after year three.</li>
+        <li>Mitigating anchor ice: raised funds and worked with Basalt and CWCB to keep enough flow from Ruedi Reservoir to prevent ice build-up that harms insects and aquatic life.</li>
+        <li>Lincoln Creek: water quality staff, with the Lincoln Creek working group, continue studying the impacts of mineralized tributaries above Grizzly Reservoir.</li>
+      </ul></div>
       <dl class="org__meta">
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>501(c)(3) nonprofit, funded mainly through contributions, grants and program fees.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://roaringfork.org" rel="noopener">roaringfork.org</a>
       </p>
     </div>
@@ -108,11 +126,16 @@
       <p class="org__scope"><span class="org__label">Service area</span> Roaring Fork watershed</p>
       <p class="org__mission">RWAPA was created to address water, power, recreational, environmental and related land issues with respect to Ruedi Reservoir, the largest major water supply and recreational reservoir within the Roaring Fork Watershed, and other local water resources pursuant to an intergovernmental agreement.</p>
       <p class="org__desc">Ruedi Water and Power Authority is a consortium of local governments within the Roaring Fork watershed supporting comprehensive water planning for the watershed. RWAPA regularly convenes the Watershed Collaborative to advance the commitments of the Roaring Fork Watershed Plan. RWAPA works in tandem with Colorado Parks and Wildlife, the US Forest Service and valley stakeholders to promote an outreach campaign to mitigate the spread of invasive mussels, and works with the Bureau of Reclamation to manage releases from the reservoir to lower temperatures in the river and provide water for agricultural, municipal and environmental uses.</p>
+      <div class="org__priorities"><span class="org__label">2026 priorities</span><ul>
+        <li>Watershed Collaborative meeting and Watershed Summit planned for fall 2026.</li>
+        <li>Ongoing aquatic nuisance work with valley partners on an invasive mussel awareness campaign.</li>
+        <li>Drought mitigation and adaptation campaign in development with valley partners.</li>
+      </ul></div>
       <dl class="org__meta">
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Municipal and county contributions, grants and intergovernmental agreements.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
       </p>
     </div>
   </details>
@@ -130,12 +153,13 @@
       <p class="org__scope"><span class="org__label">Service area</span> Colorado River Basin</p>
       <p class="org__mission">Managing, protecting and sustaining water resources within the Colorado River Basin. Goals are to protect, conserve and develop water supplies within the Western Slope of Colorado for future needs.</p>
       <p class="org__desc">Established in 2005 by the Colorado Legislature, the CBRT is a group of water managers and stakeholders who work to solve water-related issues within the Colorado River Basin, from its headwaters in Rocky Mountain National Park to the Utah state line. In addition to providing information and action, the CBRT is a source of funding for numerous and varied water projects within the basin. Monthly meetings are open to the public.</p>
+      <p class="org__priorities"><span class="org__label">2026 priorities</span> Core areas of activity detailed on the website, including the 2022 update to the Basin Implementation Plan of the Colorado Water Plan.</p>
       <dl class="org__meta">
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Through the Colorado Water Conservation Board.</dd></div>
         <div class="org__meta-item"><dt class="org__label">Offers funding</dt><dd>funding available for various needs.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://coloradobasinroundtable.org" rel="noopener">coloradobasinroundtable.org</a>
       </p>
     </div>
@@ -153,7 +177,7 @@
         <div class="org__meta-item"><dt class="org__label">Offers funding</dt><dd>the Community Funding Partnership, created in 2021, funds multi-purpose water projects on the Western Slope across five categories: productive agriculture, infrastructure, healthy rivers, watershed health and water quality, and conservation and efficiency. These funds help projects attract matching money from state, federal and private sources.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://coloradoriverdistrict.org" rel="noopener">coloradoriverdistrict.org</a>
       </p>
     </div>
@@ -171,7 +195,7 @@
         <div class="org__meta-item"><dt class="org__label">Offers funding</dt><dd>available to water providers and other entities statewide for water-related projects, studies, planning documents, awareness campaigns and other activities.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://cwcb.colorado.gov" rel="noopener">cwcb.colorado.gov</a>
       </p>
     </div>
@@ -184,11 +208,12 @@
       <p class="org__scope"><span class="org__label">Service area</span> Roaring Fork watershed - Water District 38, split near Emma</p>
       <p class="org__mission">The Division of Water Resources administers the waters of the State to maximize lawful beneficial use, ensures that dams and water wells are properly constructed and safe, and provides information about water resources to the public.</p>
       <p class="org__desc">The Division of Water Resources, also known as the Office of the State Engineer, administers water rights, issues water well permits, represents Colorado in interstate water compact proceedings, monitors streamflow and water use, approves construction and repair of dams and performs dam safety inspections, licenses well drillers, and maintains numerous databases of Colorado water information. Division 5, where all of Colorado&#x27;s major transmountain diversion projects originate, includes the Roaring Fork Watershed as District 38. District 38 has two water commissioners, split near Emma: one covers Emma upstream on the Roaring Fork, the other covers Emma downstream plus the Crystal River. They work mainly in the field, educating water users and inspecting and measuring ditch flows, as they control the headgates of the ditches. The website offers public tools including a way to track what is being diverted from the river.</p>
+      <p class="org__priorities"><span class="org__label">2026 priorities</span> Measurement Rules.</p>
       <dl class="org__meta">
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>State government.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://dwr.colorado.gov" rel="noopener">dwr.colorado.gov</a>
       </p>
     </div>
@@ -207,11 +232,12 @@
       <p class="org__scope"><span class="org__label">Service area</span> Eagle, Garfield &amp; Pitkin counties</p>
       <p class="org__mission">To conserve, develop and stabilize supplies of water for domestic, irrigation, manufacturing and other beneficial uses within those parts of Eagle, Garfield and Pitkin counties included within its boundaries.</p>
       <p class="org__desc">The BWCD holds various water rights decrees resulting from adjudications connected with the Basalt Project, whose principal feature is Ruedi Reservoir above Basalt. The District holds contracts for storage rights in Ruedi Reservoir and Green Mountain Reservoir as well as direct flow rights, which it uses to secure dependable water supplies for water users within its boundaries. These rights provide year-round water right protection to its constituents. In most cases, those contracting with the District obtain their physical water supply from groundwater wells or springs in the Roaring Fork and Fryingpan river basins. The standard homeowner contract is 100 gallons per person per day. Monthly meetings are open to the public.</p>
+      <p class="org__priorities"><span class="org__label">2026 priorities</span> Monitoring large proposed developments such as Spring Valley Ranch and Harvest Roaring Fork.</p>
       <dl class="org__meta">
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Budget of approximately $150,000, funded mainly through water contracts plus a small amount from mill levy taxes.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://bwcd.org" rel="noopener">bwcd.org</a>
       </p>
     </div>
@@ -228,7 +254,7 @@
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Municipal.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://aspen.gov" rel="noopener">aspen.gov</a>
       </p>
     </div>
@@ -245,7 +271,7 @@
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Municipal.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://glenwoodco.gov" rel="noopener">glenwoodco.gov</a>
       </p>
     </div>
@@ -262,7 +288,7 @@
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Special district - user rates and taxes.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://mvmdco.org" rel="noopener">mvmdco.org</a>
       </p>
     </div>
@@ -279,7 +305,7 @@
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Special district - user rates and taxes.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://rfwsd.com" rel="noopener">rfwsd.com</a>
       </p>
     </div>
@@ -292,12 +318,17 @@
       <p class="org__scope"><span class="org__label">Service area</span> Snowmass Village</p>
       <p class="org__mission">To provide customers with high quality water every day of the year. Water delivered to homes in Snowmass Village surpasses the strict regulations set by the State of Colorado and the US EPA. Safety and security are top priorities.</p>
       <p class="org__desc">Snowmass Water and Sanitation District was formed in 1968 to serve the new ski area, before the Town was created. It is responsible for the public water system and wastewater treatment system serving Snowmass Village. The District is governed by a publicly elected five-member board of directors; staff implement the policies and procedures set by the Board and conduct daily operations, including monitoring irrigation. East Snowmass Creek delivers 96% of Snowmass water. Monthly board meetings are open to the public.</p>
+      <div class="org__priorities"><span class="org__label">2026 priorities</span><ul>
+        <li>Conservation focus on eliminating over-irrigation, including need-based reports so homeowners can use the minimum water that keeps landscaping healthy - hoping to save 30-50 million gallons annually.</li>
+        <li>Turf Conversion program starting summer 2026 with a CWCB grant, promoting conversion to low-water perennials and native grasses.</li>
+        <li>Soil health: new construction must add a compost layer, though enforcement is difficult.</li>
+      </ul></div>
       <dl class="org__meta">
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Property taxes and user rates, funding infrastructure upgrades and operations.</dd></div>
         <div class="org__meta-item"><dt class="org__label">Offers funding</dt><dd>rebates available to homeowners for water saving efforts.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://swsd.org" rel="noopener">swsd.org</a>
       </p>
     </div>
@@ -314,7 +345,7 @@
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Municipal.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://basalt.net" rel="noopener">basalt.net</a>
       </p>
     </div>
@@ -331,7 +362,7 @@
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Municipal.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://carbondaleco.net" rel="noopener">carbondaleco.net</a>
       </p>
     </div>
@@ -348,7 +379,7 @@
         <div class="org__meta-item"><dt class="org__label">Funded by</dt><dd>Water allotment contracts.</dd></div>
       </dl>
       <p class="org__actions">
-        <button type="button" class="org__show" data-show-on-map><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
+        <button type="button" class="org__show" data-show-on-map hidden><svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 4.3-8.5A4.3 4.3 0 0 0 8 1.6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="5.9" r="1.45" fill="currentColor"/></svg>Show on map</button>
         <a class="org__site" href="https://wdwcd.org" rel="noopener">wdwcd.org</a>
       </p>
     </div>

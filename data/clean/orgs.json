@@ -13,7 +13,12 @@
     "website": "swsd.org",
     "boundary_id": "swsd_boundary",
     "category_confirmed": true,
-    "caveat": "Service area boundary, general perimeter. Provided by Darrell Smith via Google Earth export, 6/24/26."
+    "caveat": "Service area boundary, general perimeter. Provided by Darrell Smith via Google Earth export, 6/24/26.",
+    "priorities_2026": [
+      "Conservation focus on eliminating over-irrigation, including need-based reports so homeowners can use the minimum water that keeps landscaping healthy - hoping to save 30-50 million gallons annually.",
+      "Turf Conversion program starting summer 2026 with a CWCB grant, promoting conversion to low-water perennials and native grasses.",
+      "Soil health: new construction must add a compost layer, though enforcement is difficult."
+    ]
   },
   {
     "org_name": "Basalt Water Conservancy District",
@@ -29,7 +34,10 @@
     "website": "bwcd.org",
     "boundary_id": "bwcd_boundary",
     "category_confirmed": true,
-    "caveat": "Boundary from the Colorado conservancy districts shapefile provided by Gwen Garcelon, 8/26/26 (source layer dated 11/2014). Replaces a 7/9/26 KML from Eric Mangeot (Sphero Environmental) that described itself as a general perimeter and covered 2,919 km2 - 77% of the watershed - against 519 km2 here."
+    "caveat": "Boundary from the Colorado conservancy districts shapefile provided by Gwen Garcelon, 8/26/26 (source layer dated 11/2014). Replaces a 7/9/26 KML from Eric Mangeot (Sphero Environmental) that described itself as a general perimeter and covered 2,919 km2 - 77% of the watershed - against 519 km2 here.",
+    "priorities_2026": [
+      "Monitoring large proposed developments such as Spring Valley Ranch and Harvest Roaring Fork."
+    ]
   },
   {
     "org_name": "Roaring Fork Conservancy",
@@ -45,7 +53,12 @@
     "website": "roaringfork.org",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "No separate boundary file - operates across the whole Roaring Fork Watershed."
+    "caveat": "No separate boundary file - operates across the whole Roaring Fork Watershed.",
+    "priorities_2026": [
+      "Drought Resiliency Project: test plots on three ranches using deep aeration and biochar, with soil-moisture results after year three.",
+      "Mitigating anchor ice: raised funds and worked with Basalt and CWCB to keep enough flow from Ruedi Reservoir to prevent ice build-up that harms insects and aquatic life.",
+      "Lincoln Creek: water quality staff, with the Lincoln Creek working group, continue studying the impacts of mineralized tributaries above Grizzly Reservoir."
+    ]
   },
   {
     "org_name": "Ruedi Water and Power Authority",
@@ -61,7 +74,12 @@
     "website": "",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Confirmed by Gwen (7/2/26) as covering the whole Roaring Fork Watershed."
+    "caveat": "Confirmed by Gwen (7/2/26) as covering the whole Roaring Fork Watershed.",
+    "priorities_2026": [
+      "Watershed Collaborative meeting and Watershed Summit planned for fall 2026.",
+      "Ongoing aquatic nuisance work with valley partners on an invasive mussel awareness campaign.",
+      "Drought mitigation and adaptation campaign in development with valley partners."
+    ]
   },
   {
     "org_name": "Pitkin County Healthy Rivers",
@@ -93,7 +111,12 @@
     "website": "cvepa.org",
     "boundary_id": "huc10_crystal_river",
     "category_confirmed": true,
-    "caveat": "Confirmed by CVEPA via Gwen (7/28/26): service area is only the Crystal River Watershed."
+    "caveat": "Confirmed by CVEPA via Gwen (7/28/26): service area is only the Crystal River Watershed.",
+    "priorities_2026": [
+      "Supporting the Wild and Scenic designation process for the Crystal River.",
+      "Monitoring Yule Creek to establish a water-quality baseline and track the quarry's impact.",
+      "Coal Basin: methane project funding has ended but more work is needed; Coal Creek is stable through revegetation and culverts, with continued monitoring."
+    ]
   },
   {
     "org_name": "Colorado Basin Roundtable",
@@ -110,7 +133,10 @@
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
     "caveat": "Statewide/basin-scale org - likely no polygon of its own; using dissolved CO West Slope basin as stand-in.",
-    "extent_id": "cbrt_basin"
+    "extent_id": "cbrt_basin",
+    "priorities_2026": [
+      "Core areas of activity detailed on the website, including the 2022 update to the Basin Implementation Plan of the Colorado Water Plan."
+    ]
   },
   {
     "org_name": "Colorado Water Conservation Board",
@@ -272,6 +298,9 @@
     "website": "dwr.colorado.gov",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Water District 38 covers the Roaring Fork watershed, administered by two water commissioners split near Emma - one covering Emma upstream (the Aspen and Basalt side), one covering Emma downstream (the Carbondale and El Jebel side, including the Crystal River). No official map of that split exists; DWR describes it narratively. Not drawn as polygons - see scripts/build_dwr_areas.py, which can reconstruct them from subwatersheds if ever needed. Commissioner names omitted pending confirmation from Gwen."
+    "caveat": "Water District 38 covers the Roaring Fork watershed, administered by two water commissioners split near Emma - one covering Emma upstream (the Aspen and Basalt side), one covering Emma downstream (the Carbondale and El Jebel side, including the Crystal River). No official map of that split exists; DWR describes it narratively. Not drawn as polygons - see scripts/build_dwr_areas.py, which can reconstruct them from subwatersheds if ever needed. Commissioner names omitted pending confirmation from Gwen.",
+    "priorities_2026": [
+      "Measurement Rules."
+    ]
   }
 ]

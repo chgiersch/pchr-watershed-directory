@@ -43,9 +43,9 @@ Converting this to blocks later is mechanical; going the other way isn't.
 
 USAGE
 -----
-    python3 scripts/build_directory.py                 # write directory.html
-    python3 scripts/build_directory.py --fragment       # body markup only,
-                                                        # for pasting into WP
+    python3 scripts/build_directory.py                # write directory.html
+    python3 scripts/build_directory.py --wordpress      # self-contained bundle
+                                                        # for one WP HTML block
 """
 
 import argparse
@@ -56,13 +56,13 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 ORGS = REPO / "data" / "clean" / "orgs.json"
 OUT_PAGE = REPO / "directory.html"
-OUT_FRAGMENT = REPO / "_working" / "directory-fragment.html"
+OUT_WORDPRESS = REPO / "_working" / "directory-wordpress.html"
 
 # Order the sections appear in, with the framing sentence for each.
 #
 # Local first, then state and regional, then providers, then caucuses - the
-# grouping Gwen set on the roster, 8/25/26. This reverses the outward-in order
-# agreed on the 7/30 call. The reason for the change: someone arriving at this
+# grouping set on the program's stakeholder roster, 8/25/26. This reverses the
+# outward-in order agreed on the 7/30 call: someone arriving at this
 # page is far more likely to be looking for the organization working on their
 # river than for a state agency, and the first section is the one that gets
 # read. Broadest-first was tidier taxonomy and worse for the reader.
@@ -165,8 +165,13 @@ def esc(text):
 # navigating anywhere, so it needs to be a button for keyboard and screen
 # reader users to get the right behaviour and announcement. It degrades to
 # nothing useful without JavaScript, which is why it carries no href to break.
+# Emitted with the `hidden` attribute: the button only works when
+# directory-map-link.js is running, and that script can die silently - a
+# lower-role save stripping script tags, a missing wrapper id (incident
+# 2026-09-02), a plugin change. The script reveals the buttons on successful
+# init, so a dead script means no buttons rather than seventeen dead ones.
 SHOW_ON_MAP = (
-    '<button type="button" class="org__show" data-show-on-map>'
+    '<button type="button" class="org__show" data-show-on-map hidden>'
     '<svg class="org__show-icon" viewBox="0 0 16 16" aria-hidden="true" '
     'focusable="false">'
     '<path d="M8 1.6a4.3 4.3 0 0 0-4.3 4.3c0 3.2 4.3 8.5 4.3 8.5s4.3-5.3 '
@@ -290,6 +295,29 @@ def render_entry(org):
     if org.get("description"):
         parts.append(f'      <p class="org__desc">{esc(org["description"])}</p>')
 
+    # Current-year focus, from the program's stakeholder roster (8/25/26).
+    # The year lives in the
+    # LABEL on purpose: the content self-dates, so a reader can always judge
+    # its freshness and the annual maintenance task is unambiguous - update
+    # the items and the year together, or delete the field from orgs.json and
+    # the section vanishes for that organization. Rendered only where the
+    # roster had substance; a list for multiple items, a sentence for one.
+    if org.get("priorities_2026"):
+        items = org["priorities_2026"]
+        if len(items) > 1:
+            lis = "".join(f"\n        <li>{esc(i)}</li>" for i in items)
+            parts.append(
+                '      <div class="org__priorities">'
+                '<span class="org__label">2026 priorities</span>'
+                f'<ul>{lis}\n      </ul></div>'
+            )
+        else:
+            parts.append(
+                '      <p class="org__priorities">'
+                '<span class="org__label">2026 priorities</span> '
+                f'{esc(items[0])}</p>'
+            )
+
     meta = []
     if org.get("funding_model"):
         meta.append(
@@ -339,29 +367,46 @@ def render_caucus_entry(name, area, note, site):
     return "\n".join(parts)
 
 
-# Visible on every build until the county adopts the page. Two audiences: Tim
-# and Gwen, so review arrives as "is this the right content and behavior"
-# rather than notes on fonts that will be replaced by the county theme anyway;
-# and anyone who stumbles onto the GitHub Pages URL before launch, so the page
-# says what it is. Delete this constant (and the .prototype-note CSS rule) at
-# handoff.
+# Shown on the STANDALONE GitHub Pages build only - never in the WordPress
+# bundle, which is the official page. Once the county's page is live, the
+# Pages copy is the one people might reach out of context, and this tells
+# them what they're looking at. Delete this constant (and the
+# .prototype-note CSS rule) if the Pages copy is ever retired.
 PROTOTYPE_NOTE = """<p class="prototype-note">
-  <strong>Working prototype.</strong> Content and function are under review
-  with Pitkin County Healthy Rivers; the visual design will change to match
-  the county site when adopted.
+  <strong>Development copy.</strong> The official version of this page is
+  published by Pitkin County Healthy Rivers at pitkincountyrivers.com.
 </p>"""
 
-MAP_EMBED = PROTOTYPE_NOTE + """<div class="map-panel">
-  <p class="map-panel__intro" id="map-intro">
-    Interactive map of water management service areas in the Roaring Fork
-    watershed. Click any colored area for the organizations that serve it, or
-    press &ldquo;Show on map&rdquo; in a listing below to highlight its
-    territory &ndash; for statewide and basin-scale organizations the map
-    zooms out to show their full extent within Colorado. The house button
-    returns to the watershed. Every organization is also listed below, with
-    its service area described in text; only organizations serving the
-    Roaring Fork watershed appear on this page.
-  </p>
+# The intro sits OUTSIDE .map-panel so it scrolls away with the page while
+# the panel - which holds only the iframe - pins to the top. It cannot live
+# inside the sticky element: position sticky only travels within the parent,
+# and a parent that is merely intro+map tall gives it nowhere to go
+# (discovered the hard way on the live preview, 2026-09-02).
+# One visible sentence of context; the how-to folds into a native disclosure
+# beneath it. Instruction paragraphs above interactive content go unread, and
+# the fold costs one line of height where the paragraph cost five - height
+# the pinned map needs. Each instruction also lives where its action is
+# (buttons are self-labeling; the map shows a first-click hint), so this list
+# is the reference copy, not the only teacher. Native <details>: keyboard
+# operable, screen-reader friendly, WPML-translatable, no script.
+MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
+    Interactive map and directory of water management service areas in the
+    Roaring Fork watershed; only organizations serving the watershed appear
+    on this page.
+</p>
+<details class="map-help">
+  <summary>How to use this page</summary>
+  <ul>
+    <li>Click any colored area on the map to see the organizations that
+        serve it, then select one to jump to its full entry below.</li>
+    <li>Press &ldquo;Show on map&rdquo; in any listing to highlight that
+        organization&rsquo;s territory &ndash; statewide and basin
+        organizations zoom out to their full extent within Colorado.</li>
+    <li>The house button on the map returns to the Roaring Fork
+        watershed view.</li>
+  </ul>
+</details>
+<div class="map-panel">
   <iframe
     class="map-panel__frame"
     src="__MAP_URL__"
@@ -418,6 +463,8 @@ PAGE = """<!DOCTYPE html>
   <p>Pitkin County Healthy Rivers &middot; Roaring Fork Watershed</p>
 </header>
 
+__PROTOTYPE_NOTE__
+
 <!-- Sticky map. The visible intro doubles as the iframe's description: it
      tells everyone - not only screen reader users - that nothing here is
      map-only, which is what makes the canvas acceptable under WCAG 2.1 AA. -->
@@ -444,29 +491,98 @@ __FRAGMENT__
 """
 
 
+def git_version() -> str:
+    """Tag or short hash of HEAD, with a -dirty suffix for uncommitted work.
+
+    Stamped into the WordPress bundle so anyone can trace exactly what is
+    deployed. Falls back to the date alone when git is unavailable.
+    """
+    import subprocess
+    from datetime import date
+    try:
+        v = subprocess.run(["git", "describe", "--tags", "--always", "--dirty"],
+                           capture_output=True, text=True, cwd=REPO,
+                           check=True).stdout.strip()
+    except Exception:
+        v = "unknown"
+    return f"{v}, generated {date.today().isoformat()}"
+
+
+def build_wordpress_bundle(fragment: str) -> str:
+    """One self-contained blob for a single CORE Custom HTML block.
+
+    Styles and script are inlined rather than managed as separate WordPress
+    pieces (Additional CSS, an enhanced block plugin's CSS/JS tabs) so the
+    page has zero dependencies beyond WordPress core. Core blocks survive
+    theme swaps and plugin removals; per-plugin storage does not. The whole
+    update procedure becomes: regenerate, select all, paste over the block.
+    """
+    css = (REPO / "directory.css").read_text()
+    js = (REPO / "directory-map-link.js").read_text()
+
+    # A literal closing tag inside the inlined JS or CSS would terminate the
+    # wrapper element early and truncate the page. Neither file has one; this
+    # guards against that changing.
+    for token, name in (("</script", "directory-map-link.js"),
+                        ("</style", "directory.css")):
+        if token.lower() in js.lower() or token.lower() in css.lower():
+            raise SystemExit(f"'{token}' found in {name} - it would break the "
+                             "inline bundle. Restructure before regenerating.")
+
+    header = f"""<!--
+  Pitkin County Healthy Rivers - Water Management Directory
+  GENERATED PAGE - {git_version()}
+  Source: https://github.com/chgiersch/pchr-watershed-directory
+
+  Maintainer notes:
+  - Do not hand-edit this block. Content is generated from the repository
+    above (scripts/build_directory.py --wordpress); regenerate and paste the
+    whole block to update.
+  - Edit this page with the WordPress editor only. Opening it in Cornerstone
+    and saving will overwrite this block.
+  - Only an Administrator should edit and save this page. WordPress strips
+    <script> tags on save for lower roles, which silently disables the
+    map/directory linking.
+-->"""
+
+    embed = MAP_EMBED.replace("__MAP_URL__", MAP_URL_PUBLISHED)
+    # The id="directory" wrapper is REQUIRED, not decorative: the link script
+    # locates the directory by that id and exits silently if it is absent.
+    # Its omission from the first bundle disabled both directions of the
+    # map/directory link on the live preview (2026-09-02) while every message
+    # still arrived - the hardest kind of failure to see. The class carries
+    # the directory's typography and layout.
+    return (f"{header}\n<style>\n{css}</style>\n\n"
+            f"{embed}\n\n"
+            f'<div id="directory" class="directory">\n{fragment}\n</div>\n\n'
+            f"<script>\n{js}</script>\n")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--fragment", action="store_true",
-                    help="write only the body markup, for pasting into WordPress")
+    ap.add_argument("--wordpress", action="store_true",
+                    help="write the self-contained WordPress bundle "
+                         "(styles + markup + script in one block)")
     args = ap.parse_args()
 
     orgs = json.loads(ORGS.read_text())
     fragment = build_fragment(orgs)
 
-    if args.fragment:
-        # The WordPress fragment carries the published absolute URL, since it
-        # will be served from the county's own domain.
-        embed = MAP_EMBED.replace("__MAP_URL__", MAP_URL_PUBLISHED)
-        OUT_FRAGMENT.parent.mkdir(parents=True, exist_ok=True)
-        OUT_FRAGMENT.write_text(embed + "\n\n" + fragment + "\n")
-        print(f"Wrote {OUT_FRAGMENT.relative_to(REPO)} ({len(fragment):,} chars)")
+    if args.wordpress:
+        bundle = build_wordpress_bundle(fragment)
+        OUT_WORDPRESS.parent.mkdir(parents=True, exist_ok=True)
+        OUT_WORDPRESS.write_text(bundle)
+        print(f"Wrote {OUT_WORDPRESS.relative_to(REPO)} ({len(bundle):,} chars)")
         print(f"  iframe points at {MAP_URL_PUBLISHED}")
-        print("  Paste into a Custom HTML block; styles come from directory.css.")
-        print("  NOTE: that URL serves from main - make sure main is current first.")
+        print("  Paste the ENTIRE file into one core Custom HTML block.")
+        print("  That URL serves from main - make sure main is current first.")
+        if "-dirty" in bundle.splitlines()[2]:
+            print("  WARNING: built from uncommitted changes (version is -dirty).")
         return
 
     page = (PAGE
             .replace("__FRAGMENT__", fragment)
+            .replace("__PROTOTYPE_NOTE__", PROTOTYPE_NOTE)
             .replace("__MAP_EMBED__", MAP_EMBED.replace("__MAP_URL__", MAP_URL_LOCAL)))
     OUT_PAGE.write_text(page)
 

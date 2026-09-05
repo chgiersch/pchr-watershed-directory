@@ -1,6 +1,6 @@
 ---
 name: builder
-description: Implements a single approved, well-scoped change on a feature branch. Use after the main agent and Chris have agreed exact scope. Never commits - stages work and reports back for review.
+description: Implements a single approved, well-scoped change on a feature branch. Use after the main agent and the maintainer have agreed exact scope. Never commits - stages work and reports back for review.
 tools: Read, Edit, Write, Grep, Glob, Bash
 model: opus
 ---

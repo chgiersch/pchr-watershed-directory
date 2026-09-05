@@ -27,9 +27,9 @@ history - read it before changing anything it covers.
 - GitFlow: `main` (released) / `dev` (integration) / `feature|fix|docs/*`
   branches. Merge commits, NEVER squash. Releases follow RELEASING.md
   literally, including the verify-main-moved-before-tagging step.
-- Chris approves every commit. Propose the commit message, wait.
-- Chris verifies all visual output himself. Never claim a rendered page
-  looks right - hand him a test script instead.
+- The maintainer approves every commit. Propose the commit message, wait.
+- The maintainer verifies all visual output personally. Never claim a rendered
+  page looks right - hand over a test script instead.
 - `check.py` green before any commit. If a change legitimately breaks a
   check, the check gets updated in the same commit with reasoning.
 - New accepted review findings either get fixed or become a new check in
@@ -52,9 +52,9 @@ history - read it before changing anything it covers.
 ## Conventions
 
 - En-dash (–) in prose, never em-dash. Applies to comments, docs, commit
-  messages, and any text Chris will paste or send.
-- Paste-ready shell blocks contain NO `#` comments - Chris's zsh executes
-  stray `#` fragments.
+  messages, and any text the maintainer will paste or send.
+- Paste-ready shell blocks contain NO `#` comments - zsh executes stray `#`
+  fragments as commands.
 - Comments explain WHY and name the incident they prevent, matching the
   style already in the codebase.
 - Data lives in `data/clean/orgs.json` (17 orgs) and
@@ -77,9 +77,10 @@ history - read it before changing anything it covers.
 
 ## Working style
 
-Chris is an MS GIS student building this pro bono; he maintains everything
-in this repo himself and must understand every change well enough to debug
-it alone. Explain reasoning at decision points, show diffs before applying
-when asked, and prefer one small reviewed change over three fast ones. The
-`.claude/skills/annotated-coding` and `.claude/skills/dev-workflow` skills
-govern this in detail - honor them.
+This repository is maintained by one person and is built for
+minimum-maintenance handoff: someone who has never met its author will
+eventually maintain it, and every change must be explainable well enough to
+debug without its author present. Explain reasoning at decision points, show
+diffs before applying when asked, and prefer one small reviewed change over
+three fast ones. The `.claude/skills/annotated-coding` and
+`.claude/skills/dev-workflow` skills govern this in detail - honor them.

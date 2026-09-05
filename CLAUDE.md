@@ -72,5 +72,7 @@ Homebrew python is now 3.14.7. If imports start failing oddly, recreate it:
 `python3 -m venv .venv && pip install -r requirements.txt`.
 
 `geopandas` is the slow install — it binds to GDAL/GEOS/PROJ. This is an Intel
-Mac and Homebrew has dropped Intel support, so if those wheels stop building,
-MacPorts (`/opt/local`) is installed as the fallback for the C libraries.
+Mac and Homebrew has dropped Intel support, so those wheels may eventually stop
+building. `brew install gdal geos proj` first, per the README. If Homebrew can't
+supply them any more, MacPorts still supports Intel and is the fallback worth
+reaching for at that point.

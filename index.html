@@ -622,6 +622,24 @@
     popup.setLngLat(lngLat);
   }
 
+  // Every data string that reaches Popup.setHTML() goes through here. The
+  // map reads orgs.json and boundaries.geojson at runtime, so whatever a
+  // future data editor pastes into an org name or scope lands in the DOM
+  // verbatim. The Python generator escapes the same fields for the directory
+  // page, but that path stops being re-run once the county owns the
+  // WordPress content, while this one runs on every visit (review finding
+  // 15, 2026-09-05). Escaping the five characters HTML cares about covers
+  // both text nodes and double-quoted attribute values, which are the only
+  // two contexts the popup templates use.
+  function esc(value) {
+    return (value == null ? '' : String(value))
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function openPopup(lngLat, html) {
     if (activePopup) {
       replacingPopup = true;
@@ -1456,17 +1474,17 @@
 
       const orgBlock = org => embedded
         ? `<button type="button" class="popup-org-block popup-org-block--link"
-                   data-org="${org.org_short}">
+                   data-org="${esc(org.org_short)}">
              <span class="popup-org-text">
-               <span class="popup-org-name">${org.org_name}</span>
-               ${org.scope ? `<span class="popup-scope">${org.scope}</span>` : ''}
+               <span class="popup-org-name">${esc(org.org_name)}</span>
+               ${org.scope ? `<span class="popup-scope">${esc(org.scope)}</span>` : ''}
              </span>
              ${JUMP_ICON}
              <span class="sr-only">- see full entry below</span>
            </button>`
         : `<div class="popup-org-block">
-             <div class="popup-org-name">${org.org_name}</div>
-             ${org.scope ? `<div class="popup-scope">${org.scope}</div>` : ''}
+             <div class="popup-org-name">${esc(org.org_name)}</div>
+             ${org.scope ? `<div class="popup-scope">${esc(org.scope)}</div>` : ''}
            </div>`;
 
       const section = (label, list) => list.length ? `
@@ -1490,7 +1508,7 @@
         // and municipalities whose name is already the org name below.
         let extentLabel = 'Highlighted extent';
         if (boundary && boundary.huc_code && boundary.label) {
-          extentLabel += ` &middot; ${boundary.label}`;
+          extentLabel += ` &middot; ${esc(boundary.label)}`;
         }
 
         // Open ground gets no "Highlighted extent" header - nothing is
@@ -1575,7 +1593,7 @@
         const crystal = hitBoundaries.get('huc10_crystal_river');
         const crystalHtml = crystal ? `
           <div class="popup-desc" style="margin-top:-4px">
-            HUC ${crystal.huc_code} · ${Math.round(crystal.areasqkm).toLocaleString()} km²
+            HUC ${esc(crystal.huc_code)} · ${Math.round(crystal.areasqkm).toLocaleString()} km²
           </div>
         ` : '';
 

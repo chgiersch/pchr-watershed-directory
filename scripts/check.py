@@ -204,6 +204,23 @@ def run_embed_checks():
     check("map script free of debug output", not noisy,
           f"Debug statements ship to every visitor; found: {sorted(set(noisy))}")
 
+    # Popup markup is built from data the map fetches at runtime and handed
+    # to Popup.setHTML(). The generator escapes those fields for the
+    # directory page; the map did not, until review finding 15 (2026-09-05)
+    # - a data editor pasting markup into an org name would have executed on
+    # the map origin. A bare `${org.x}` / `${boundary.x}` / `${crystal.x}`
+    # inside a template literal is therefore a regression; the safe form is
+    # `${esc(org.x)}`. Numeric fields wrapped in Math.round() do not match
+    # this pattern and need no escaping.
+    check("map script defines the esc() HTML escaper",
+          "function esc(" in map_js,
+          "Without the helper every popup interpolation is a stored-XSS "
+          "path from orgs.json to the map origin.")
+    bare = re.findall(r"\$\{\s*(?:org|boundary|crystal)\.[\w.]+\s*\}", map_js)
+    check("map popup interpolates data fields only through esc()", not bare,
+          "Data files are edited by hand and outlive their author; an "
+          f"unescaped field is stored XSS. Bare interpolations: {bare[:5]}")
+
     # Shipped and public source speaks in roles, not stakeholder names.
     named = []
     for path in (CSS, LINK_JS, MAP_HTML):

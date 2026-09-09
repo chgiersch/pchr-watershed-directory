@@ -155,6 +155,50 @@ def run_embed_checks():
           "https://pitkincountyrivers.com" in map_js,
           "Map->host messages are dropped unless the sender is allowlisted.")
 
+    # Third-party code the map executes. Every external script and stylesheet
+    # must be pinned to an exact version and carry a subresource integrity
+    # hash, so a compromised CDN or package release is refused by the browser
+    # instead of running inside a page the county embeds (review finding 16,
+    # 2026-09-05). A floating range (pmtiles@3) is rejected outright because
+    # no hash can be computed for content that is allowed to change. Only
+    # <script src> and <link rel="stylesheet"> count: preconnect hints carry
+    # no content, and the Google Fonts stylesheet is a separate finding (25).
+    map_html = MAP_HTML.read_text()
+    unpinned, unhashed = [], []
+    for tag_m in re.finditer(r"<(?:script|link)\b[^>]*>", map_html):
+        tag = tag_m.group(0)
+        is_script = tag.startswith("<script") and 'src="http' in tag
+        is_sheet = 'rel="stylesheet"' in tag and 'href="http' in tag
+        if not (is_script or is_sheet):
+            continue
+        url = re.search(r'(?:src|href)="(https?://[^"]+)"', tag).group(1)
+        if "fonts.googleapis.com" in url:
+            continue
+        ver_m = re.search(r"@(\d[^/]*)/", url)
+        if not ver_m or not re.fullmatch(r"\d+\.\d+\.\d+", ver_m.group(1)):
+            unpinned.append(url)
+        if 'integrity="sha' not in tag or 'crossorigin="anonymous"' not in tag:
+            unhashed.append(url)
+    check("external map assets pinned to exact versions",
+          not unpinned,
+          f"A floating version cannot carry an integrity hash; found: {unpinned}")
+    check("external map assets carry integrity + crossorigin",
+          not unhashed,
+          f"Without a hash a CDN compromise executes unnoticed; found: {unhashed}")
+
+    # The library guard must run BEFORE the first CDN global is dereferenced.
+    # Without it a missing script throws a ReferenceError on line one and
+    # aborts the block before the data-load .catch (the other notice path)
+    # is ever registered - a blank map with no message (findings 7 and 59).
+    # The first-use marker is the assignment statement, not the bare call,
+    # because the guard's own comment quotes the call and sits above it.
+    guard_at = map_js.find("showMapLoadError();")
+    first_use = map_js.find("const pmtilesProtocol = new pmtiles.Protocol(")
+    check("map guards missing CDN libraries before first use",
+          0 <= guard_at < first_use,
+          "A CDN outage must produce the visible notice, not a blank frame; "
+          "the guard has to precede the first library reference.")
+
     # Debug hygiene in the map application code.
     noisy = re.findall(r"console\.(log|debug|table|info)\(|debugger\b", map_js)
     check("map script free of debug output", not noisy,

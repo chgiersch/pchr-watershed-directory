@@ -254,6 +254,29 @@ def run_data_checks():
           "A mismatched string silently produces an EMPTY directory section "
           f"rather than an error; found: {sorted(sections)}")
 
+    # The two roster fields the generator turns into public statements. The
+    # generator now refuses these values itself, but a lint failure names the
+    # row before anyone runs a build, and stands even if the generator's
+    # validation is later loosened. Both patterns mirror FUNDING_RE and
+    # WEBSITE_RE in build_directory.py; keep them in step by hand - this
+    # script deliberately does not import the generator it checks.
+    bad_funding = [o.get("org_short", "?") for o in orgs
+                   if not re.match(r"(?i)^(yes|no)\b",
+                                   str(o.get("provides_funding") or "").strip())]
+    check("every org answers provides_funding with Yes or No", not bad_funding,
+          "The generator once read every value not starting with 'no' as a "
+          "yes, so a blank, 'N/A' or 'Unknown' field published a green "
+          "'Offers funding' flag - a false statement about the organization "
+          f"(review finding 8); offending: {bad_funding}")
+    bad_site = [o.get("org_short", "?") for o in orgs
+                if o.get("website")
+                and not re.match(r"(?i)^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$",
+                                 o["website"])]
+    check("every org website is a bare host, no scheme or path", not bad_site,
+          "The link is built as https://{host}; a pasted 'https://example.org' "
+          "renders href=\"https://https://example.org\", a link that fails "
+          f"only when clicked (review finding 14); offending: {bad_site}")
+
     b = json.loads(BOUNDARIES.read_text())
     check("boundaries.geojson holds 11 features",
           len(b.get("features", [])) == 11,

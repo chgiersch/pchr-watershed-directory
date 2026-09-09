@@ -5,17 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Roaring Fork Watershed Directory</title>
 
+  <!-- The unpkg assets below are the only code this page does not host
+       itself. Each is pinned to an exact version and carries a subresource
+       integrity hash: if unpkg, npm or the package itself ever serves
+       different bytes, the browser refuses to run them rather than execute
+       someone else's code inside a page the county embeds (review finding
+       16, 2026-09-05). A floating range such as pmtiles@3 cannot carry a
+       hash, which is why every specifier here is exact. To upgrade one,
+       change the version and regenerate its hash with
+         curl -sL URL | openssl dgst -sha384 -binary | openssl base64 -A
+       then paste the result after "sha384-". crossorigin="anonymous" is
+       required for the browser to verify the hash at all; scripts/check.py
+       refuses a floating version or a missing hash. -->
   <!-- MapLibre GL JS -->
-  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"
+        integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V" crossorigin="anonymous" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
+          integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
 
   <!-- PMTiles - reads the self-hosted basemap archive directly via HTTP range
        requests, no tile server. Replaces raw OpenStreetMap raster tiles,
        which OSM's own usage policy asks production sites not to hotlink. -->
-  <script src="https://unpkg.com/pmtiles@3/dist/pmtiles.js"></script>
+  <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"
+          integrity="sha384-QfbOCebHNw8pQiPAOd2IFee2v2A5VYZxBk0+JGZ5H+3mfzVIp6zsQNkTsfGJot93" crossorigin="anonymous"></script>
   <!-- Protomaps' basemap style generator - builds the full MapLibre layer
        list (roads/water/buildings/labels) for a given color flavor. -->
-  <script src="https://unpkg.com/@protomaps/basemaps@5/dist/basemaps.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@protomaps/basemaps@5.7.2/dist/basemaps.js"
+          integrity="sha384-fzuU7k7ZWwfZAe1+3h7plrSA6dNazJaM2NsKVwcrReJLK0gwVwyOSyPwROl9m1M0" crossorigin="anonymous"></script>
 
   <!-- Fonts matching pitkincountyrivers.com: Kameron (headings), Montserrat (body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -352,6 +368,43 @@
 <div class="map-note">Proof of concept · 17 water management organizations · 10 service areas mapped within the Roaring Fork watershed; watershed-wide and statewide organizations are listed rather than drawn</div>
 
 <script>
+  // Shown whenever the map cannot be built - the CDN scripts never arrived,
+  // or the data fetch fails later on. Centred over the empty map container
+  // so the failure is unmistakable, and role="alert" so screen readers hear
+  // it without depending on the live region, which does not exist yet when
+  // the library guard below runs. One function for both failure paths so
+  // the wording and styling cannot drift apart.
+  function showMapLoadError() {
+    const notice = document.createElement('div');
+    notice.className = 'map-load-error';
+    notice.setAttribute('role', 'alert');
+    notice.textContent = 'The map could not load. Every organization and '
+      + 'its service area is described in the directory below.';
+    document.getElementById('map').appendChild(notice);
+  }
+
+  // The three unpkg scripts in <head> are the only code this page does not
+  // host itself. If any fails to arrive (CDN outage, a network that blocks
+  // unpkg.com, an integrity hash that no longer matches), the first
+  // `new pmtiles.Protocol()` below would throw a ReferenceError and abort
+  // this whole block before map.on('load') and its .catch ever register -
+  // a blank bordered box with no message, the exact silent failure the
+  // notice exists to prevent (review findings 7 and 59, 2026-09-05). So
+  // check the globals first, show the notice, and throw an error whose
+  // text names the missing library: the console then gives the next
+  // maintainer a diagnosis instead of "pmtiles is not defined".
+  const missingLibraries = [
+    ['maplibregl', 'MapLibre GL'],
+    ['pmtiles', 'PMTiles'],
+    ['basemaps', 'Protomaps basemaps']
+  ].filter(([globalName]) => typeof window[globalName] === 'undefined')
+   .map(([, label]) => label);
+  if (missingLibraries.length) {
+    showMapLoadError();
+    throw new Error('Map libraries did not load from unpkg.com: '
+      + missingLibraries.join(', '));
+  }
+
   // Register the pmtiles:// protocol once, before the map is created, so
   // MapLibre can read tiles directly out of the single .pmtiles file via
   // HTTP range requests - no tile server involved.
@@ -1782,12 +1835,7 @@
       // at the directory, which carries every fact the map would have shown -
       // the text equivalent is the fallback by design, so say so. Announced
       // for screen reader users via the existing live region.
-      const notice = document.createElement('div');
-      notice.className = 'map-load-error';
-      notice.setAttribute('role', 'alert');
-      notice.textContent = 'The map could not load. Every organization and '
-        + 'its service area is described in the directory below.';
-      map.getContainer().appendChild(notice);
+      showMapLoadError();
       announce('The map could not load. All information is available in the '
         + 'directory below the map.');
     });

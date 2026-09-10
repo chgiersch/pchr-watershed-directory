@@ -327,6 +327,17 @@ def render_entry(org):
             f'<span class="org__label">Service area</span> {esc(org["scope"])}'
             "</p>"
         )
+    # Water source, the county contact's top ask in the 9/9/26 review: "I want
+    # people to know where the actual water is coming from." It sits directly
+    # under the service area because the two together answer the visitor's
+    # question - which provider, and from where. Optional: a provider whose
+    # source is still being researched simply lacks the line, and check.py
+    # keeps the list of those pending honest.
+    if org.get("water_source"):
+        parts.append(
+            '      <p class="org__source">'
+            f'<span class="org__label">Water source</span> {esc(org["water_source"])}</p>'
+        )
     # Mission and description carry the same small-caps label as the service
     # area. They used to run as two unlabeled paragraphs beneath it, and the
     # county's Healthy Rivers contact read that as one undifferentiated block

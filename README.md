@@ -209,7 +209,9 @@ CBRT/CWCB/CRD all use the CO West Slope basin. So geometry and org attributes ar
 | `caveat` | Provenance and known limitations, including any cleaning applied |
 
 **`data/clean/orgs.json`** — one row per org: `org_name`, `org_short`, `category`, `website`,
-`boundary_id`, `category_confirmed`, and an org-specific `caveat`. No geometry.
+`boundary_id`, `category_confirmed`, an org-specific `caveat`, and for water providers a
+`water_source` (optional while the county is still confirming some; `scripts/check.py` lists which).
+No geometry.
 
 `index.html` draws each boundary once from `boundaries.geojson`, then joins to `orgs.json` on
 `boundary_id` at click-time so the popup can list every org tied to that shape. `name`/`areasqkm`/

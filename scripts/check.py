@@ -305,6 +305,25 @@ def run_data_checks():
           "renders href=\"https://https://example.org\", a link that fails "
           f"only when clicked (review finding 14); offending: {bad_site}")
 
+    # Water source is the county contact's top ask from the 9/9/26 review.
+    # Every provider must either state one or be listed here as pending her
+    # research, so a new provider row cannot silently ship without the line;
+    # a row that gains the field must leave this list, so the list stays an
+    # honest record of what is still owed.
+    pending_source = {"BWCD", "MVMD", "WDWCD"}
+    providers = [o for o in orgs if o.get("section") == "Water providers"]
+    no_source = [o["org_short"] for o in providers
+                 if not o.get("water_source")
+                 and o["org_short"] not in pending_source]
+    stale_pending = [o["org_short"] for o in providers
+                     if o.get("water_source") and o["org_short"] in pending_source]
+    check("every water provider states a water source or is listed as pending",
+          not no_source and not stale_pending,
+          "The field is optional in the generator, so a missing value renders "
+          "as nothing rather than an error; the pending list is the only "
+          f"record of what is still owed. Missing: {no_source}; on the "
+          f"pending list but populated: {stale_pending}")
+
     b = json.loads(BOUNDARIES.read_text())
     check("boundaries.geojson holds 11 features",
           len(b.get("features", [])) == 11,

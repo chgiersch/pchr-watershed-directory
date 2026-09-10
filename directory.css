@@ -386,8 +386,10 @@ body {
 
 /* The service-area line is doing real work: it's the text that carries the
    map's information for anyone who can't use the map. Styled to read as
-   substance, not as a caption. */
-.org__scope {
+   substance, not as a caption. The water-source line shares the rule: the
+   two together answer "which provider, and from where". */
+.org__scope,
+.org__source {
   margin: 0 0 0.625rem;
   font-size: 0.9375rem;
 }

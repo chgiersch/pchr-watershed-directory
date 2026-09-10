@@ -332,28 +332,14 @@ def render_entry(org):
     if org.get("description"):
         parts.append(f'      <p class="org__desc">{esc(org["description"])}</p>')
 
-    # Current-year focus, from the program's stakeholder roster (8/25/26).
-    # The year lives in the
-    # LABEL on purpose: the content self-dates, so a reader can always judge
-    # its freshness and the annual maintenance task is unambiguous - update
-    # the items and the year together, or delete the field from orgs.json and
-    # the section vanishes for that organization. Rendered only where the
-    # roster had substance; a list for multiple items, a sentence for one.
-    if org.get("priorities_2026"):
-        items = org["priorities_2026"]
-        if len(items) > 1:
-            lis = "".join(f"\n        <li>{esc(i)}</li>" for i in items)
-            parts.append(
-                '      <div class="org__priorities">'
-                '<span class="org__label">2026 priorities</span>'
-                f'<ul>{lis}\n      </ul></div>'
-            )
-        else:
-            parts.append(
-                '      <p class="org__priorities">'
-                '<span class="org__label">2026 priorities</span> '
-                f'{esc(items[0])}</p>'
-            )
+    # orgs.json also carries `priorities_2026`, a per-org list from the
+    # program's stakeholder roster. It is deliberately NOT rendered: the
+    # county's Healthy Rivers contact pulled it from the public page in the
+    # 9/9/26 site review because it dates too fast for a page nobody has
+    # committed to refreshing each year. The data stays in the roster - the
+    # county reuses it in outreach presentations and it may return in another
+    # form - so do not "clean up" the field, and do not wire it back in here
+    # without a named annual owner.
 
     meta = []
     if org.get("funding_model"):

@@ -249,14 +249,28 @@ def run_embed_checks():
           "Data files are edited by hand and outlive their author; an "
           f"unescaped field is stored XSS. Bare interpolations: {bare[:5]}")
 
-    # Shipped and public source speaks in roles, not stakeholder names.
+    # Current files speak in roles, not individual names - page copy, data
+    # provenance, README and script comments alike (maintainer decision
+    # 2026-09-09; until then only the three pasted files were scanned).
+    # Surnames stand in where a bare first name would false-match ordinary
+    # words ("Bill", "Smith"). data/raw is received as-is and never edited,
+    # so it is deliberately outside the scan; this file holds the list and is
+    # skipped for that reason alone.
+    names = ("Gwen", "Garcelon", "Tim", "Braun", "Darrell", "Mangeot",
+             "Sphero", "Heather", "Ramsey", "Blakeslee")
+    scanned = [CSS, LINK_JS, MAP_HTML, ORGS, BOUNDARIES, REPO / "README.md",
+               *sorted((REPO / "data" / "reference").glob("*.geojson")),
+               *sorted(p for p in (REPO / "scripts").glob("*.py")
+                       if p.name != "check.py")]
     named = []
-    for path in (CSS, LINK_JS, MAP_HTML):
-        for name in ("Gwen", "Tim Braun", "Braun,"):
-            if name in path.read_text():
+    for path in scanned:
+        text = path.read_text()
+        for name in names:
+            if re.search(rf"\b{name}\b", text):
                 named.append(f"{path.name}:{name}")
-    check("shipped source free of stakeholder first names", not named,
-          f"Roles outlast people, and view-source is public; found: {named}")
+    check("current files free of stakeholder names", not named,
+          "Roles outlast people, the repository and data files are public, "
+          f"and the maintainer chose roles after asking the county; found: {named}")
 
 
 # ------------------------------------------------------------------ DATA ----

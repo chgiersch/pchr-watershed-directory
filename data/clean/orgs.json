@@ -14,7 +14,7 @@
     "website": "swsd.org",
     "boundary_id": "swsd_boundary",
     "category_confirmed": true,
-    "caveat": "Service area boundary, general perimeter. Provided by Darrell Smith via Google Earth export, 6/24/26.",
+    "caveat": "Service area boundary, general perimeter. Provided by district staff via Google Earth export, 6/24/26.",
     "priorities_2026": [
       "Conservation focus on eliminating over-irrigation, including need-based reports so homeowners can use the minimum water that keeps landscaping healthy - hoping to save 30-50 million gallons annually.",
       "Turf Conversion program starting summer 2026 with a CWCB grant, promoting conversion to low-water perennials and native grasses.",
@@ -35,7 +35,7 @@
     "website": "bwcd.org",
     "boundary_id": "bwcd_boundary",
     "category_confirmed": true,
-    "caveat": "Boundary from the Colorado conservancy districts shapefile provided by Gwen Garcelon, 8/26/26 (source layer dated 11/2014). Replaces a 7/9/26 KML from Eric Mangeot (Sphero Environmental) that described itself as a general perimeter and covered 2,919 km2 - 77% of the watershed - against 519 km2 here.",
+    "caveat": "Boundary from the Colorado conservancy districts shapefile provided by county Healthy Rivers staff, 8/26/26 (source layer dated 11/2014). Replaces a 7/9/26 KML from a district consultant, a general-perimeter file covering 2,919 km2 (77% of the watershed) against 519 km2 here.",
     "priorities_2026": [
       "Monitoring large proposed developments such as Spring Valley Ranch and Harvest Roaring Fork."
     ]
@@ -75,7 +75,7 @@
     "website": "",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Confirmed by Gwen (7/2/26) as covering the whole Roaring Fork Watershed.",
+    "caveat": "Confirmed by county Healthy Rivers staff (7/2/26) as covering the whole Roaring Fork Watershed.",
     "priorities_2026": [
       "Watershed Collaborative meeting and Watershed Summit planned for fall 2026.",
       "Ongoing aquatic nuisance work with valley partners on an invasive mussel awareness campaign.",
@@ -96,7 +96,7 @@
     "website": "pitkincountyrivers.com",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Per Tim Braun (Pitkin County), the HUC-8 boundary is the \"official\" Healthy Rivers boundary."
+    "caveat": "Per county staff, the HUC-8 boundary is the \"official\" Healthy Rivers boundary."
   },
   {
     "org_name": "Crystal Valley Environmental Protection Association",
@@ -112,7 +112,7 @@
     "website": "cvepa.org",
     "boundary_id": "huc10_crystal_river",
     "category_confirmed": true,
-    "caveat": "Confirmed by CVEPA via Gwen (7/28/26): service area is only the Crystal River Watershed.",
+    "caveat": "Confirmed by CVEPA via county Healthy Rivers staff (7/28/26): service area is only the Crystal River Watershed.",
     "priorities_2026": [
       "Supporting the Wild and Scenic designation process for the Crystal River.",
       "Monitoring Yule Creek to establish a water-quality baseline and track the quarry's impact.",

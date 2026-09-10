@@ -301,7 +301,7 @@ def render_entry(org):
     # reasonable thing to hear.
     flag = ('<span class="org__flag">Offers funding</span>' if offers else "")
 
-    # The extent, visible on the COLLAPSED row. Tim's county review (8/26/26)
+    # The extent, visible on the COLLAPSED row. The county's review (8/26/26)
     # made the case for this: "the state-wide orgs can't be recognized as such"
     # - because the scope only appeared after expanding. Shown as plain text
     # right of the name, so a scan down the closed list answers "how big is

@@ -7,13 +7,14 @@
     "tier": "service_area",
     "scope": "Snowmass Village",
     "mission": "To provide customers with high quality water every day of the year. Water delivered to homes in Snowmass Village surpasses the strict regulations set by the State of Colorado and the US EPA. Safety and security are top priorities.",
-    "description": "Snowmass Water and Sanitation District was formed in 1968 to serve the new ski area, before the Town was created. It is responsible for the public water system and wastewater treatment system serving Snowmass Village. The District is governed by a publicly elected five-member board of directors; staff implement the policies and procedures set by the Board and conduct daily operations, including monitoring irrigation. East Snowmass Creek delivers 96% of Snowmass water. Monthly board meetings are open to the public.",
+    "description": "Snowmass Water and Sanitation District was formed in 1968 to serve the new ski area, before the Town was created. It is responsible for the public water system and wastewater treatment system serving Snowmass Village. The District is governed by a publicly elected five-member board of directors; staff implement the policies and procedures set by the Board and conduct daily operations, including monitoring irrigation. Monthly board meetings are open to the public.",
+    "water_source": "East Snowmass Creek, which delivers 96% of the District's water.",
     "funding_model": "Property taxes and user rates, funding infrastructure upgrades and operations.",
     "provides_funding": "Yes - rebates available to homeowners for water saving efforts.",
     "website": "swsd.org",
     "boundary_id": "swsd_boundary",
     "category_confirmed": true,
-    "caveat": "Service area boundary, general perimeter. Provided by Darrell Smith via Google Earth export, 6/24/26.",
+    "caveat": "Service area boundary, general perimeter. Provided by district staff via Google Earth export, 6/24/26.",
     "priorities_2026": [
       "Conservation focus on eliminating over-irrigation, including need-based reports so homeowners can use the minimum water that keeps landscaping healthy - hoping to save 30-50 million gallons annually.",
       "Turf Conversion program starting summer 2026 with a CWCB grant, promoting conversion to low-water perennials and native grasses.",
@@ -34,7 +35,7 @@
     "website": "bwcd.org",
     "boundary_id": "bwcd_boundary",
     "category_confirmed": true,
-    "caveat": "Boundary from the Colorado conservancy districts shapefile provided by Gwen Garcelon, 8/26/26 (source layer dated 11/2014). Replaces a 7/9/26 KML from Eric Mangeot (Sphero Environmental) that described itself as a general perimeter and covered 2,919 km2 - 77% of the watershed - against 519 km2 here.",
+    "caveat": "Boundary from the Colorado conservancy districts shapefile provided by county Healthy Rivers staff, 8/26/26 (source layer dated 11/2014). Replaces a 7/9/26 KML from a district consultant, a general-perimeter file covering 2,919 km2 (77% of the watershed) against 519 km2 here.",
     "priorities_2026": [
       "Monitoring large proposed developments such as Spring Valley Ranch and Harvest Roaring Fork."
     ]
@@ -74,7 +75,7 @@
     "website": "",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Confirmed by Gwen (7/2/26) as covering the whole Roaring Fork Watershed.",
+    "caveat": "Confirmed by county Healthy Rivers staff (7/2/26) as covering the whole Roaring Fork Watershed.",
     "priorities_2026": [
       "Watershed Collaborative meeting and Watershed Summit planned for fall 2026.",
       "Ongoing aquatic nuisance work with valley partners on an invasive mussel awareness campaign.",
@@ -95,7 +96,7 @@
     "website": "pitkincountyrivers.com",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Per Tim Braun (Pitkin County), the HUC-8 boundary is the \"official\" Healthy Rivers boundary."
+    "caveat": "Per county staff, the HUC-8 boundary is the \"official\" Healthy Rivers boundary."
   },
   {
     "org_name": "Crystal Valley Environmental Protection Association",
@@ -111,7 +112,7 @@
     "website": "cvepa.org",
     "boundary_id": "huc10_crystal_river",
     "category_confirmed": true,
-    "caveat": "Confirmed by CVEPA via Gwen (7/28/26): service area is only the Crystal River Watershed.",
+    "caveat": "Confirmed by CVEPA via county Healthy Rivers staff (7/28/26): service area is only the Crystal River Watershed.",
     "priorities_2026": [
       "Supporting the Wild and Scenic designation process for the Crystal River.",
       "Monitoring Yule Creek to establish a water-quality baseline and track the quarry's impact.",
@@ -180,13 +181,14 @@
     "tier": "service_area",
     "scope": "Aspen Glen, Coryell Ranch, Midland Point & Ironbridge",
     "mission": "Distribution and supply of water for domestic and other uses, collection and treatment of sewage from District customers, and maintenance, repair and replacement of the mains, hydrants, valves and service facilities the District owns.",
-    "description": "Established on 5 May 1994. The District currently provides water and sewer service to the Aspen Glen, Coryell Ranch, Midland Point and Ironbridge developments, along with Riverview School. Water supply comes from water mains from municipal supply.",
+    "description": "Established on 5 May 1994. The District currently provides water and sewer service to the Aspen Glen, Coryell Ranch, Midland Point and Ironbridge developments, along with Riverview School.",
+    "water_source": "Municipal supply, delivered by water main.",
     "funding_model": "Special district - user rates and taxes.",
     "provides_funding": "No",
     "website": "rfwsd.com",
     "boundary_id": "rfwsd_boundary",
     "category_confirmed": true,
-    "caveat": "Real official boundary from Colorado DOLA, 7/28/26."
+    "caveat": "Real official boundary from Colorado DOLA, 7/28/26. Which municipality supplies the water is being confirmed with the county (9/9/26)."
   },
   {
     "org_name": "Mid Valley Metropolitan District",
@@ -228,7 +230,7 @@
     "tier": "service_area",
     "scope": "Municipal water system",
     "mission": "Municipal water supply for the Town of Carbondale.",
-    "description": "Water supply is the Crystal River, on which the Town holds substantial water rights.",
+    "water_source": "The Crystal River, on which the Town holds substantial water rights.",
     "funding_model": "Municipal.",
     "provides_funding": "No",
     "website": "carbondaleco.net",
@@ -244,7 +246,8 @@
     "tier": "service_area",
     "scope": "Municipal water system",
     "mission": "Municipal water supply for the City of Aspen.",
-    "description": "Aspen draws its water from Maroon and Castle Creeks, and has new storage ideas at Woody Creek to replace the reservoirs it gave up on Maroon and Castle Creeks.",
+    "description": "The City has new storage possibilities at Woody Creek to replace the reservoirs it gave up on Maroon and Castle Creeks.",
+    "water_source": "Maroon and Castle Creeks.",
     "funding_model": "Municipal.",
     "provides_funding": "No",
     "website": "aspen.gov",
@@ -260,7 +263,7 @@
     "tier": "service_area",
     "scope": "Municipal water system",
     "mission": "Municipal water supply for the City of Glenwood Springs.",
-    "description": "Water supply comes from Grizzly and No Name creeks, plus some water rights in the Roaring Fork.",
+    "water_source": "Grizzly and No Name creeks, plus some water rights in the Roaring Fork.",
     "funding_model": "Municipal.",
     "provides_funding": "No",
     "website": "glenwoodco.gov",
@@ -276,7 +279,8 @@
     "tier": "service_area",
     "scope": "Municipal water system",
     "mission": "Municipal water treatment, storage and distribution for the Town of Basalt.",
-    "description": "The Town-owned municipal water system provides water treatment, storage and distribution to approximately 925 service connections. The Town of Basalt Water Department serves east Basalt, including Old Town, Southside and Elk Run. The primary sources are Basalt Springs and Lucksinger Springs on Basalt Mountain, piped into town and filtered. Three deep wells drawing from the Roaring Fork aquifer supplement the spring water during periods of high demand, such as the summer irrigation season.",
+    "description": "The Town-owned municipal water system provides water treatment, storage and distribution to approximately 925 service connections. The Town of Basalt Water Department serves east Basalt, including Old Town, Southside and Elk Run.",
+    "water_source": "Basalt Springs and Lucksinger Springs on Basalt Mountain, piped into town and filtered. Three deep wells drawing from the Roaring Fork aquifer supplement the spring water during periods of high demand, such as the summer irrigation season.",
     "funding_model": "Municipal.",
     "provides_funding": "No",
     "website": "basalt.net",
@@ -298,7 +302,7 @@
     "website": "dwr.colorado.gov",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Water District 38 covers the Roaring Fork watershed, administered by two water commissioners split near Emma - one covering Emma upstream (the Aspen and Basalt side), one covering Emma downstream (the Carbondale and El Jebel side, including the Crystal River). No official map of that split exists; DWR describes it narratively. Not drawn as polygons - see scripts/build_dwr_areas.py, which can reconstruct them from subwatersheds if ever needed. Commissioner names omitted pending confirmation from Gwen.",
+    "caveat": "Water District 38 covers the Roaring Fork watershed, administered by two water commissioners split near Emma - one covering Emma upstream (the Aspen and Basalt side), one covering Emma downstream (the Carbondale and El Jebel side, including the Crystal River). No official map of that split exists; DWR describes it narratively. Not drawn as polygons - see scripts/build_dwr_areas.py, which can reconstruct them from subwatersheds if ever needed. Emma as the dividing line was confirmed final by the county's Healthy Rivers contact in the 9/9/26 site review, on the authority of the local DWR office. Commissioner names are deliberately kept off the page.",
     "priorities_2026": [
       "Measurement Rules."
     ]

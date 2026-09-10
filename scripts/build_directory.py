@@ -51,6 +51,7 @@ USAGE
 import argparse
 import html
 import json
+import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -183,12 +184,30 @@ SHOW_ON_MAP = (
 )
 
 
-def render_actions(show_on_map, website):
-    """The action row at the foot of an entry: show-on-map, then the website."""
+# A website value is a bare host: "swsd.org", "cwcb.colorado.gov". The link
+# is assembled as https://{host}, so a value that already carries a scheme
+# would render as href="https://https://example.org" - a link that builds
+# clean and fails only when a visitor clicks it (review finding 14). Paths,
+# ports, spaces and anything scheme-like are refused for the same reason:
+# the roster is hand-edited, and the generator is the only place that can
+# turn a paste mistake into an error instead of a dead link.
+WEBSITE_RE = re.compile(r"^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$", re.I)
+
+
+def render_actions(show_on_map, website, who):
+    """The action row at the foot of an entry: show-on-map, then the website.
+
+    `who` names the entry in the error raised for a malformed website, so the
+    failing roster row can be found without a traceback hunt.
+    """
     items = []
     if show_on_map:
         items.append(SHOW_ON_MAP)
     if website:
+        if not WEBSITE_RE.match(website):
+            raise ValueError(
+                f"{who}: website must be a bare host with no scheme or path "
+                f"(like example.org), got {website!r}")
         site = esc(website)
         items.append(
             f'<a class="org__site" href="https://{site}" rel="noopener">{site}</a>'
@@ -219,15 +238,33 @@ def display_name(org):
     return f'{esc(name)} <span class="org__abbr">({esc(short)})</span>'
 
 
-def funding_badge(value):
-    """Turn the roster's free-text funding answer into a flag plus detail.
+# The roster's funding answer must open with a plain Yes or No. Whatever
+# follows the word, after an optional separator, is the detail shown in the
+# body. The word boundary matters: "None" and "Nope" are not answers.
+FUNDING_RE = re.compile(r"^(yes|no)\b\s*[-\u2013:,.]?\s*(.*)$", re.I | re.S)
 
-    Values look like 'No', 'Yes - rebates to homeowners', or a longer sentence.
-    Anything not starting with 'no' counts as offering funding.
+
+def funding_badge(value, who):
+    """Turn the roster's funding answer into (offers, detail).
+
+    Values look like 'No', 'Yes', or 'Yes - rebates to homeowners'. The
+    answer must start with Yes or No; anything else raises, naming the entry
+    in `who`. This used to treat everything that did not start with "no" as
+    a yes, so a blank, "N/A" or "Unknown" field published a green "Offers
+    funding" flag - a false public statement about the organization,
+    generated from an absent answer (review finding 8). The detail used to
+    be cut at the first "-" anywhere in the string, which turned
+    "Yes, for cost-share projects" into "share projects"; now only the text
+    after the Yes is kept, whole.
     """
     raw = (value or "").strip()
-    offers = not raw.lower().startswith("no")
-    detail = raw.split("-", 1)[1].strip() if offers and "-" in raw else ""
+    m = FUNDING_RE.match(raw)
+    if not m:
+        raise ValueError(
+            f"{who}: provides_funding must start with 'Yes' or 'No', "
+            f"got {raw!r}")
+    offers = m.group(1).lower() == "yes"
+    detail = m.group(2).strip() if offers else ""
     return offers, detail
 
 
@@ -251,7 +288,7 @@ def render_entry(org):
     if org.get("boundary_id"):
         attrs += f' data-boundary="{esc(org["boundary_id"])}"'
 
-    offers, detail = funding_badge(org.get("provides_funding"))
+    offers, detail = funding_badge(org.get("provides_funding"), org["org_name"])
 
     # The summary wraps an <h3> rather than a plain span. The HTML spec allows
     # summary to contain a single heading element, and it matters here: screen
@@ -264,7 +301,7 @@ def render_entry(org):
     # reasonable thing to hear.
     flag = ('<span class="org__flag">Offers funding</span>' if offers else "")
 
-    # The extent, visible on the COLLAPSED row. Tim's county review (8/26/26)
+    # The extent, visible on the COLLAPSED row. The county's review (8/26/26)
     # made the case for this: "the state-wide orgs can't be recognized as such"
     # - because the scope only appeared after expanding. Shown as plain text
     # right of the name, so a scan down the closed list answers "how big is
@@ -290,33 +327,41 @@ def render_entry(org):
             f'<span class="org__label">Service area</span> {esc(org["scope"])}'
             "</p>"
         )
+    # Water source, the county contact's top ask in the 9/9/26 review: "I want
+    # people to know where the actual water is coming from." It sits directly
+    # under the service area because the two together answer the visitor's
+    # question - which provider, and from where. Optional: a provider whose
+    # source is still being researched simply lacks the line, and check.py
+    # keeps the list of those pending honest.
+    if org.get("water_source"):
+        parts.append(
+            '      <p class="org__source">'
+            f'<span class="org__label">Water source</span> {esc(org["water_source"])}</p>'
+        )
+    # Mission and description carry the same small-caps label as the service
+    # area. They used to run as two unlabeled paragraphs beneath it, and the
+    # county's Healthy Rivers contact read that as one undifferentiated block
+    # in the 9/9/26 review; the labels let a reader tell an organization's
+    # stated purpose from the account of what it does.
     if org.get("mission"):
-        parts.append(f'      <p class="org__mission">{esc(org["mission"])}</p>')
+        parts.append(
+            '      <p class="org__mission">'
+            f'<span class="org__label">Mission</span> {esc(org["mission"])}</p>'
+        )
     if org.get("description"):
-        parts.append(f'      <p class="org__desc">{esc(org["description"])}</p>')
+        parts.append(
+            '      <p class="org__desc">'
+            f'<span class="org__label">Description</span> {esc(org["description"])}</p>'
+        )
 
-    # Current-year focus, from the program's stakeholder roster (8/25/26).
-    # The year lives in the
-    # LABEL on purpose: the content self-dates, so a reader can always judge
-    # its freshness and the annual maintenance task is unambiguous - update
-    # the items and the year together, or delete the field from orgs.json and
-    # the section vanishes for that organization. Rendered only where the
-    # roster had substance; a list for multiple items, a sentence for one.
-    if org.get("priorities_2026"):
-        items = org["priorities_2026"]
-        if len(items) > 1:
-            lis = "".join(f"\n        <li>{esc(i)}</li>" for i in items)
-            parts.append(
-                '      <div class="org__priorities">'
-                '<span class="org__label">2026 priorities</span>'
-                f'<ul>{lis}\n      </ul></div>'
-            )
-        else:
-            parts.append(
-                '      <p class="org__priorities">'
-                '<span class="org__label">2026 priorities</span> '
-                f'{esc(items[0])}</p>'
-            )
+    # orgs.json also carries `priorities_2026`, a per-org list from the
+    # program's stakeholder roster. It is deliberately NOT rendered: the
+    # county's Healthy Rivers contact pulled it from the public page in the
+    # 9/9/26 site review because it dates too fast for a page nobody has
+    # committed to refreshing each year. The data stays in the roster - the
+    # county reuses it in outreach presentations and it may return in another
+    # form - so do not "clean up" the field, and do not wire it back in here
+    # without a named annual owner.
 
     meta = []
     if org.get("funding_model"):
@@ -336,7 +381,8 @@ def render_entry(org):
         parts.extend(meta)
         parts.append("      </dl>")
 
-    parts.extend(render_actions(bool(org.get("boundary_id")), org.get("website")))
+    parts.extend(render_actions(bool(org.get("boundary_id")), org.get("website"),
+                                org["org_name"]))
 
     parts.append("    </div>")
     parts.append("  </details>")
@@ -361,7 +407,7 @@ def render_caucus_entry(name, area, note, site):
     )
     parts.append(f'      <p class="org__desc">{esc(note)}</p>')
     # No show-on-map button: the caucuses aren't drawn (7/30 call).
-    parts.extend(render_actions(False, site))
+    parts.extend(render_actions(False, site, name))
     parts.append("    </div>")
     parts.append("  </details>")
     return "\n".join(parts)

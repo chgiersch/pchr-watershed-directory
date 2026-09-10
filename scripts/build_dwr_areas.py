@@ -6,14 +6,14 @@ Fork (Water District 38) and append them to data/clean/boundaries.geojson.
 WHY THIS EXISTS
 ---------------
 DWR publishes no map of the split between its two local water commissioners -
-only a narrative description. Heather Ramsey supplied the actual breakdown by
-creek (7/30/26):
+only a narrative description. The lower-area water commissioner supplied the
+actual breakdown by creek (7/30/26):
 
-  Bill Blakeslee  - Emma UP the Roaring Fork (Aspen & Basalt area):
+  Upper commissioner - Emma UP the Roaring Fork (Aspen & Basalt area):
       Brush Creek, Capitol Creek, Castle Creek, Fryingpan River, Owl Creek,
       Ruedi Reservoir, Sopris Creek, Snowmass Creek, Woody Creek
 
-  Heather Ramsey  - Emma DOWN the Roaring Fork (Carbondale / El Jebel area):
+  Lower commissioner - Emma DOWN the Roaring Fork (Carbondale / El Jebel area):
       Blue Creek, Cattle Creek, Crystal River, Four Mile Creek, Prince Creek,
       Three Mile Creek, Thomas Creek, Thompson Creek
 
@@ -22,12 +22,12 @@ HUC-12 subwatersheds. Water commissioners administer by drainage, so drainage
 boundaries are the right unit - and the result is defensible against a source
 rather than being an eyeballed guess.
 
-Her creek list maps almost exactly onto HUC-10 groupings. The one group that
+The creek list maps almost exactly onto HUC-10 groupings. The one group that
 splits across both commissioners is 1401000408, which contains Sopris Creek
-(Bill) and Blue Creek (Heather) - and that IS the Emma line: Sopris enters the
+(upper) and Blue Creek (lower) - and that IS the Emma line: Sopris enters the
 Roaring Fork just above Emma, Blue Creek just below.
 
-Creeks she named that aren't HUC-12 names (Owl, Prince, Three Mile, Thomas)
+Creeks named that aren't HUC-12 names (Owl, Prince, Three Mile, Thomas)
 fall inside subwatersheds already assigned to the correct commissioner, so
 they're covered without special handling.
 
@@ -42,7 +42,7 @@ polygons are: nobody is "served by" a water commissioner, it's who
 administers water rights where. So DWR is described in text instead, per the
 original decision on the 7/30 planning call.
 
-This script is kept because the reasoning below (mapping Heather's creek list
+This script is kept because the reasoning below (mapping the commissioner's creek list
 onto subwatersheds) is the hard part and shouldn't have to be redone. If the
 areas are ever wanted - a dedicated toggle, a separate figure, an outline-only
 treatment - run it again rather than rebuilding the logic.
@@ -82,7 +82,7 @@ BOUNDARIES = REPO / "data" / "clean" / "boundaries.geojson"
 WBD_HUC12 = "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/6/query"
 ROARING_FORK_HUC8 = "14010004"
 
-# HUC-10 groups (digits 9-10 of the HUC-12 code), assigned from Heather's list.
+# HUC-10 groups (digits 9-10 of the HUC-12 code), assigned from the commissioner's list.
 UPPER_GROUPS = {"01", "02", "03", "04", "05", "06"}
 #  01 headwaters Roaring Fork (Lincoln, Difficult, Hunter, McFarlane)
 #  02 Castle Creek        03 Maroon Creek
@@ -95,8 +95,8 @@ LOWER_GROUPS = {"07", "09", "10"}
 # Group 08 straddles the split - assign its two subwatersheds individually.
 SPLIT_GROUP = "08"
 SPLIT_ASSIGNMENT = {
-    "140100040801": "upper",   # Sopris Creek  - Bill, enters just above Emma
-    "140100040802": "lower",   # Blue Creek    - Heather, just below Emma
+    "140100040801": "upper",   # Sopris Creek  - upper, enters just above Emma
+    "140100040802": "lower",   # Blue Creek    - lower, just below Emma
 }
 
 
@@ -209,14 +209,14 @@ def build(dry_run: bool = False) -> None:
     meta = {
         "upper": dict(
             boundary_id="dwr_upper",
-            name="DWR Water District 38 - upper (Blakeslee)",
+            name="DWR Water District 38 - upper (Emma up)",
             label="DWR upper",
             caveat=(
                 "Division of Water Resources commissioner area, Emma upstream - "
                 "Aspen and Basalt side. No official map of this split exists; DWR "
                 "describes it narratively. Built from USGS HUC-12 "
-                "subwatersheds matching the creeks Heather Ramsey listed for Bill "
-                "Blakeslee (Brush, Capitol, Castle, Fryingpan, Owl, Ruedi, Sopris, "
+                "subwatersheds matching the creeks the lower commissioner listed "
+                "for the upper area (Brush, Capitol, Castle, Fryingpan, Owl, Ruedi, Sopris, "
                 "Snowmass, Woody). Water commissioners administer by drainage, so "
                 "drainage divides are the appropriate unit - but this is an "
                 "interpretation of a written description, NOT an official boundary. "
@@ -225,14 +225,14 @@ def build(dry_run: bool = False) -> None:
         ),
         "lower": dict(
             boundary_id="dwr_lower",
-            name="DWR Water District 38 - lower (Ramsey)",
+            name="DWR Water District 38 - lower (Emma down)",
             label="DWR lower",
             caveat=(
                 "Division of Water Resources commissioner area, Emma downstream - "
                 "Carbondale and El Jebel side, including the Crystal River. No "
                 "official map of this split exists; DWR describes it narratively. "
                 "Built from USGS HUC-12 subwatersheds matching the creeks "
-                "Heather Ramsey listed for her own area (Blue, Cattle, Crystal, "
+                "the lower commissioner listed for the lower area (Blue, Cattle, Crystal, "
                 "Four Mile, Prince, Three Mile, Thomas, Thompson). Water "
                 "commissioners administer by drainage, so drainage divides are the "
                 "appropriate unit - but this is an interpretation of a written "

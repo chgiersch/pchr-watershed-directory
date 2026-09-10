@@ -327,10 +327,21 @@ def render_entry(org):
             f'<span class="org__label">Service area</span> {esc(org["scope"])}'
             "</p>"
         )
+    # Mission and description carry the same small-caps label as the service
+    # area. They used to run as two unlabeled paragraphs beneath it, and the
+    # county's Healthy Rivers contact read that as one undifferentiated block
+    # in the 9/9/26 review; the labels let a reader tell an organization's
+    # stated purpose from the account of what it does.
     if org.get("mission"):
-        parts.append(f'      <p class="org__mission">{esc(org["mission"])}</p>')
+        parts.append(
+            '      <p class="org__mission">'
+            f'<span class="org__label">Mission</span> {esc(org["mission"])}</p>'
+        )
     if org.get("description"):
-        parts.append(f'      <p class="org__desc">{esc(org["description"])}</p>')
+        parts.append(
+            '      <p class="org__desc">'
+            f'<span class="org__label">Description</span> {esc(org["description"])}</p>'
+        )
 
     # orgs.json also carries `priorities_2026`, a per-org list from the
     # program's stakeholder roster. It is deliberately NOT rendered: the

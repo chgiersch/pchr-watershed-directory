@@ -155,6 +155,34 @@ def run_embed_checks():
           "https://pitkincountyrivers.com" in map_js,
           "Map->host messages are dropped unless the sender is allowlisted.")
 
+    # How each end learns the other's origin. Six review findings (3, 18, 4,
+    # 20, 22, 23) were one question in different clothes; these pin the
+    # answer so a later convenience edit cannot quietly reopen it.
+    check("link script reads the iframe src only inside the loopback gate",
+          bool(re.search(
+              r"if \(isLoopback\(window\.location\.hostname\)\) \{\s*try \{\s*"
+              r"var src = new URL\(frame\.getAttribute\('src'\)", link_js))
+          and link_js.count("getAttribute('src')") == 1,
+          "A lazy-load plugin rewrites the src before the script runs; an "
+          "ungated src-derived MAP_ORIGIN retargeted messages at the county's "
+          "own origin.")
+    allow = re.search(r"const ALLOWED_ORIGINS = \[(.*?)\];", map_js, re.S)
+    check("map allowlist ships https origins only",
+          bool(allow) and "http://" not in allow.group(1),
+          "The allowlist is the map's security boundary; a plain-http entry "
+          "is the first thing an external review flags. Loopback origins are "
+          "derived at runtime, never shipped.")
+    check("map learns the host origin from pchr:hello, not document.referrer",
+          "document.referrer" not in map_js and "'pchr:hello'" in map_js
+          and "'pchr:hello'" in link_js,
+          "Any Referrer-Policy stricter than the default empties the referrer "
+          "and the map->host half of the link dies with no error.")
+    check("both message handlers pin the sender window",
+          "ev.source !== frame.contentWindow" in link_js
+          and "ev.source !== window.parent" in map_js,
+          "Origin alone does not identify a sender - any frame from an "
+          "allowlisted origin could post; only the partnered window may.")
+
     # Third-party code the map executes. Every external script and stylesheet
     # must be pinned to an exact version and carry a subresource integrity
     # hash, so a compromised CDN or package release is refused by the browser

@@ -65,9 +65,12 @@ the parent page. The symptom is maddening: the directory shows new code, the map
 and the postMessage link between them silently dies (8/27/26). The script sends `no-store`, so
 what's in the browser is always what's on disk.
 
-**Port 8000 specifically.** `index.html` validates the origin of every `postMessage` against a
-fixed allowlist, and only `localhost:8000` and `127.0.0.1:8000` are on it. On any other port the
-page loads and looks correct, but the map and directory silently stop talking to each other.
+**Any port works, but only on loopback.** Both ends of the map/directory link pin origins. The
+shipped allowlist in `index.html` is https-only (the county site and GitHub Pages), and
+`directory-map-link.js` targets the published map origin. Each end relaxes that only when it is
+itself running on `localhost`, `127.0.0.1` or `[::1]`: the map then also accepts loopback hosts,
+and the link script takes the map origin from the iframe. Served from any other hostname, neither
+relaxation runs, which is what keeps a page on someone's laptop from driving the published map.
 
 Open `directory.html`, not `index.html`. On its own `index.html` is just the map; the two-way link
 only exists when the map is embedded in the host page.
@@ -76,25 +79,24 @@ only exists when the map is embedded in the host page.
 
 In production the directory lives on the county's WordPress and the map is an iframe from GitHub
 Pages - two different origins, with the origin checks on both sides doing real work. Served
-locally, both files come from the same origin and `directory-map-link.js` detects that, so none of
-that code actually runs.
+locally, both files come from the same origin and every origin check passes trivially.
 
 `localhost` and `127.0.0.1` are distinct origins to a browser despite being the same server, and
-both are already allowlisted - so the real path can be exercised without touching `index.html`:
+both are loopback - so the real path can be exercised with one edit to a generated file:
 
 1. Point the iframe at the other hostname: in `directory.html`, `src="index.html"` becomes
    `src="http://localhost:8000/index.html"`
-2. In `directory-map-link.js`, set `MAP_ORIGIN` to `'http://localhost:8000'`
-3. Load the page at **http://127.0.0.1:8000/directory.html** - note the different hostname; using
+2. Load the page at **http://127.0.0.1:8000/directory.html** - note the different hostname; using
    `localhost` for both puts you back to same-origin and tests nothing
-4. Confirm both directions work: an org in a map popup scrolls the directory, and "Show on map"
-   moves the map
+3. Confirm both directions work: an org in a map popup scrolls the directory, and "Show on map"
+   moves the map. Nothing in `directory-map-link.js` needs editing: on loopback it reads the map
+   origin from the iframe src.
 
-Then the negative case, which is the half that actually proves the check is enforced. Set
-`MAP_ORIGIN` to `'http://localhost:9999'` and reload. Both directions should stop working. Only
-one of them reports anything: `postMessage` throws a visible console error going out, while
-incoming messages are dropped by a silent guard clause. To see that rejection rather than infer
-it, add a listener of your own before clicking:
+Then the negative case, which is the half that actually proves the checks are enforced. In
+`index.html`, remove `'127.0.0.1'` from `LOOPBACK_HOSTS` and reload. The map now refuses the
+page's hello and its focus messages, so both directions stop working, and nothing reports it:
+incoming messages are dropped by silent guard clauses on both sides. To see the rejection rather
+than infer it, add a listener of your own in the map frame's console before clicking:
 
 ```js
 window.addEventListener('message', e => console.log('RX from', e.origin, e.data));
@@ -106,11 +108,11 @@ Revert when finished. `directory.html` is generated, so rebuild rather than hand
 
 ```bash
 python3 scripts/build_directory.py
-git checkout directory-map-link.js
-git status --short        # must be empty
+git checkout index.html
+git status --short
 ```
 
-Do not commit a hardcoded `localhost` in either file.
+The last command must print nothing. Do not commit a loopback edit in either file.
 
 ## Folder layout
 

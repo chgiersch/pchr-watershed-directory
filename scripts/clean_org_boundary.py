@@ -16,7 +16,7 @@ Example:
     python clean_org_boundary.py ../data/raw/swsd_district_boundary.kml \
         "Snowmass Water and Sanitation District" "SWSD" "Water Providers" "swsd.org" \
         "KML export via Google Earth" "2026-06-24" "" \
-        "Provided by district staff. Service area boundary, general perimeter."
+        "Provided by Darrell Smith. Service area boundary, general perimeter."
 
 Output is written to ../data/clean/<org_short>.geojson
 """

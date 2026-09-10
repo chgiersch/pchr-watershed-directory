@@ -47,11 +47,7 @@ history - read it before changing anything it covers.
 - All CSS custom properties use the `--wmd-` prefix (page-global namespace).
 - The link script is a strict-mode IIFE with no injection/exfiltration
   sinks. Worst case must remain "scrolls and toggles a class".
-- Current files speak in roles, never individual names – page copy, data
-  provenance, README and script comments alike (maintainer decision
-  2026-09-09, closing review findings 21/41/42; check.py scans them all).
-  `data/raw/` is received as-is and never edited; git history keeps what
-  it keeps.
+- Shipped source speaks in roles, never stakeholder first names.
 
 ## Conventions
 

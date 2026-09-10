@@ -3,7 +3,7 @@
 Local dev server. Run from the repo root:
 
     python3 scripts/serve.py          # serves on port 8000
-    python3 scripts/serve.py 8001     # any port works, see the origin note
+    python3 scripts/serve.py 8001     # if you must - but see the port warning
 
 This exists because plain servers have burned this project twice over:
 
@@ -20,13 +20,9 @@ This exists because plain servers have burned this project twice over:
   postMessage link between them silently dies (8/27/26). no-store makes the
   browser fetch from disk every time, which is exactly right for development.
 
-Origin note: the map/directory postMessage link pins origins at both ends,
-and each end relaxes that only when it is itself served from a loopback
-hostname (localhost, 127.0.0.1, [::1]). Any port is fine. Serving the tree
-from a LAN address or a tunnel is not - the link silently does nothing there,
-by design, because the published map must not be drivable from arbitrary
-hosts. Before 2026-09-09 the allowlist hard-coded port 8000, which is why
-older notes insist on it.
+Port 8000 specifically: index.html validates postMessage origins against an
+allowlist that includes only localhost:8000 and 127.0.0.1:8000. On another
+port everything renders and the map/directory link silently does nothing.
 """
 
 import sys
@@ -48,5 +44,8 @@ class DevHandler(RangeRequestHandler):
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
+    if port != 8000:
+        print(f"WARNING: port {port} is not in the map's postMessage origin "
+              "allowlist - the map/directory link will not work.")
     print(f"Serving on http://localhost:{port} (Range: yes, caching: disabled)")
     ThreadingHTTPServer(("", port), DevHandler).serve_forever()

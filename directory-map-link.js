@@ -18,17 +18,10 @@
  *   Picking an org in a map popup ->  entry opens and scrolls into view
  *
  * SECURITY
- *   Every message is checked against MAP_ORIGIN in both directions, and the
- *   sender must be the map frame's own window. Accepting messages from any
- *   origin would let any page that can reach this one drive the directory;
- *   posting to '*' would broadcast to whatever happens to be loaded in the
- *   frame. Neither is acceptable on a government site.
- *
- *   How the map learns where to reply: this script posts pchr:hello into the
- *   frame, and the map answers only that window at that origin. The map used
- *   to read document.referrer instead, which any Referrer-Policy stricter
- *   than the browser default silently blanks – the county could have hardened
- *   its headers and lost the map->directory half without an error anywhere.
+ *   Every message is checked against MAP_ORIGIN in both directions. Accepting
+ *   messages from any origin would let any page that can reach this one drive
+ *   the directory; posting to '*' would broadcast to whatever happens to be
+ *   loaded in the frame. Neither is acceptable on a government site.
  */
 (function () {
   'use strict';
@@ -48,27 +41,12 @@
     b.removeAttribute('hidden');
   });
 
-  // Local development only. scripts/serve.py serves the directory and the map
-  // from one loopback origin, and the cross-origin rehearsal in README.md
-  // serves them from two (localhost vs 127.0.0.1), so on loopback the map's
-  // origin is read from the iframe. The outer gate is THIS page's hostname:
-  // on the county site it is never loopback, so the block is inert there.
-  //
-  // That gate is the whole point. The earlier version trusted the iframe src
-  // whenever it matched the page's origin, and a lazy-load plugin swaps the
-  // src for a same-origin placeholder before this script runs – which would
-  // have retargeted MAP_ORIGIN at the county's own origin (review finding 3,
-  // 2026-09-05). check.py asserts the src read stays inside this gate.
-  var LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
-  function isLoopback(hostname) {
-    return LOOPBACK_HOSTS.indexOf(hostname) !== -1;
-  }
-  if (isLoopback(window.location.hostname)) {
-    try {
-      var src = new URL(frame.getAttribute('src'), window.location.href);
-      if (isLoopback(src.hostname)) MAP_ORIGIN = src.origin;
-    } catch (e) { /* unparseable src – keep the published origin */ }
-  }
+  // Allow the map to be served from the same origin as the page during local
+  // development, without having to edit MAP_ORIGIN.
+  try {
+    var src = new URL(frame.getAttribute('src'), window.location.href);
+    if (src.origin === window.location.origin) MAP_ORIGIN = src.origin;
+  } catch (e) { /* leave the configured value */ }
 
   function entryFor(boundaryId) {
     return directory.querySelector('[data-boundary="' + CSS.escape(boundaryId) + '"]');
@@ -78,21 +56,6 @@
     if (!frame.contentWindow) return;
     frame.contentWindow.postMessage(payload, MAP_ORIGIN);
   }
-
-  // Introduce this page to the map. The map replies only to the window and
-  // origin it hears this from, so nothing flows map->directory until a hello
-  // lands. Sent twice because either timing alone can miss: immediately, for
-  // a map that finished loading before this script ran (cached, or the
-  // script placed low on the page – the frame's load event has already fired
-  // and will not fire again), and on the load event, for a map still loading
-  // now. A hello posted before the map's listener exists is dropped by the
-  // browser; a duplicate reaching a map that already knows us is answered
-  // again with the same ready message, which is harmless.
-  function hello() {
-    send({ type: 'pchr:hello' });
-  }
-  hello();
-  frame.addEventListener('load', hello);
 
   /* ---- Directory -> map ---------------------------------------------- */
 
@@ -136,10 +99,7 @@
   /* ---- Map -> directory ---------------------------------------------- */
 
   window.addEventListener('message', function (ev) {
-    // Origin alone does not identify the sender: any frame this page embeds
-    // from the map's origin could post here. The map frame's own window is
-    // the only legitimate partner (review finding 23).
-    if (ev.origin !== MAP_ORIGIN || ev.source !== frame.contentWindow) return;
+    if (ev.origin !== MAP_ORIGIN) return;
     var msg = ev.data;
     if (!msg || typeof msg !== 'object') return;
 

@@ -386,10 +386,8 @@ body {
 
 /* The service-area line is doing real work: it's the text that carries the
    map's information for anyone who can't use the map. Styled to read as
-   substance, not as a caption. The water-source line shares the rule: the
-   two together answer "which provider, and from where". */
-.org__scope,
-.org__source {
+   substance, not as a caption. */
+.org__scope {
   margin: 0 0 0.625rem;
   font-size: 0.9375rem;
 }
@@ -415,6 +413,19 @@ body {
   font-size: 0.9375rem;
   color: #333;
 }
+
+/* Year-labeled focus block. The year in the label is the freshness marker -
+   see the note at priorities rendering in build_directory.py. */
+.org__priorities {
+  margin: 0 0 0.875rem;
+  font-size: 0.9375rem;
+  color: #333;
+}
+.org__priorities ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.3rem;
+}
+.org__priorities li + li { margin-top: 0.3rem; }
 
 .org__meta {
   margin: 0 0 0.75rem;

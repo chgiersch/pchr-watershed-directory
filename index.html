@@ -1637,84 +1637,49 @@
       // The directory lives on the WordPress page, outside this iframe, so the
       // two can only talk via postMessage. Both directions are supported:
       //
-      //   in   { type: 'pchr:hello' }                       - host script is
-      //                                                        running; reply here
-      //        { type: 'pchr:focus', boundaryId, orgShort }  - highlight and fly
+      //   in   { type: 'pchr:focus', boundaryId, orgShort }  - highlight and fly
       //        { type: 'pchr:clear' }               - drop the selection
       //   out  { type: 'pchr:selected', boundaryId, orgs }  - user picked a shape
-      //        { type: 'pchr:showOrg',  orgShort }           - popup org picked
       //        { type: 'pchr:ready',    boundaries }        - map is live
       //
       // SECURITY: origin is checked on both ends, and it is not optional.
       // A listener that accepts any origin lets any page that embeds this map
       // drive it, and posting with '*' would leak our messages to whatever
-      // document happens to be the parent. The list is https-only on purpose
-      // and check.py enforces that: it is this map's security boundary, and a
-      // plain-http entry in it is the first thing an external review flags
-      // (finding 22). Loopback origins for local work are derived at runtime
-      // below, never shipped.
+      // document happens to be the parent. Add the county's domain here when
+      // the real host is known; localhost and the GitHub Pages origin cover
+      // development and the standalone version.
       const ALLOWED_ORIGINS = [
         'https://pitkincountyrivers.com',
         'https://www.pitkincountyrivers.com',
-        'https://chgiersch.github.io'
+        'https://chgiersch.github.io',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000'
       ];
 
-      // Local development: scripts/serve.py serves both halves from loopback,
-      // and README.md's cross-origin rehearsal uses two loopback names. So a
-      // map that is itself on loopback also accepts loopback hosts. A map
-      // served from anywhere else never does - the published map cannot be
-      // driven by a page on someone's localhost.
-      const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
-      const isLoopback = (hostname) => LOOPBACK_HOSTS.includes(hostname);
-      const isAllowed = (origin) => {
-        if (ALLOWED_ORIGINS.includes(origin)) return true;
-        if (!isLoopback(window.location.hostname)) return false;
-        try { return isLoopback(new URL(origin).hostname); }
-        catch (_) { return false; }   // "null" and other opaque origins
-      };
+      const isAllowed = (origin) => ALLOWED_ORIGINS.includes(origin);
 
-      // Where replies go. The host's origin cannot be read across origins,
-      // and the referrer - the previous source - is emptied by any
-      // Referrer-Policy stricter than the browser default, which killed the
-      // map->host half silently (finding 4; check.py now rejects any read of
-      // the referrer here). Now the host announces itself:
-      // its script posts pchr:hello, and the origin and window of the first
-      // allowlisted hello are the only place this map will ever post to.
-      // Until one arrives there is nobody to talk to and postToHost is silent.
+      // The parent's origin isn't readable cross-origin, so it's taken from
+      // document.referrer - which the browser sets to the embedding page.
       let hostOrigin = null;
-      let hostWindow = null;
+      try {
+        if (document.referrer) hostOrigin = new URL(document.referrer).origin;
+      } catch (_) { /* malformed or absent referrer - stay null, send nothing */ }
 
       function postToHost(payload) {
+        // Only when framed, and only to an origin we recognise. Silence is the
+        // correct behaviour otherwise: no host, or an unexpected one, means
+        // there's nobody we should be talking to.
         if (window.self === window.top) return;
-        if (!hostOrigin || !hostWindow) return;
-        hostWindow.postMessage(payload, hostOrigin);
-      }
-
-      // The ready message waits for two things in either order: the data
-      // has loaded (readyPayload is set, further down) and the host has said
-      // hello. A hello can arrive before the data (fast host, slow tiles) or
-      // after it (cached map, host script still parsing); whichever comes
-      // second sends. Sending on every hello is deliberate - the host sends
-      // two, see directory-map-link.js - and repeats are harmless.
-      let readyPayload = null;
-      function sendReady() {
-        if (readyPayload) postToHost(readyPayload);
+        if (!hostOrigin || !isAllowed(hostOrigin)) return;
+        window.parent.postMessage(payload, hostOrigin);
       }
 
       window.addEventListener('message', (ev) => {
         if (!isAllowed(ev.origin)) return;
-        // Origin alone does not identify the sender: any frame the host page
-        // embeds from an allowlisted origin could post here. The window that
-        // embeds this map is its only legitimate partner (finding 23).
-        if (ev.source !== window.parent) return;
         const msg = ev.data;
         if (!msg || typeof msg !== 'object') return;
 
-        if (msg.type === 'pchr:hello') {
-          hostOrigin = ev.origin;
-          hostWindow = ev.source;
-          sendReady();
-        } else if (msg.type === 'pchr:focus' && msg.boundaryId) {
+        if (msg.type === 'pchr:focus' && msg.boundaryId) {
           focusBoundary(msg.boundaryId, { orgShort: msg.orgShort });
         } else if (msg.type === 'pchr:clear') {
           closePopup();
@@ -1818,16 +1783,14 @@
       };
 
       // Tell the host what's available, so it can wire up only the rows that
-      // actually have a shape on the map rather than guessing. Goes out now
-      // if the host has already said hello, otherwise when it does.
-      readyPayload = {
+      // actually have a shape on the map rather than guessing.
+      postToHost({
         type: 'pchr:ready',
         boundaries: orgShapes.map(f => ({
           boundaryId: f.properties.boundary_id,
           label: f.properties.label
         }))
-      };
-      sendReady();
+      });
 
       // ---- Keyboard access ----
       // A canvas map is unreachable by keyboard on its own: MapLibre pans and

@@ -7,9 +7,11 @@ Two deployment targets from one repo:
    GitHub Pages from `main`. Embedded as an iframe by target 2.
 2. WordPress bundle - `python3 scripts/build_directory.py --wordpress`
    generates `_working/directory-wordpress.html`, a single self-contained
-   HTML block (inline style + markup + inline script) pasted into a page on
-   pitkincountyrivers.com. `directory.css` and `directory-map-link.js` are
-   inlined into it at build time - edit the source files, never the bundle.
+   blob (inline style + markup + inline script) pasted into a Raw Content
+   element on a Cornerstone-built page on pitkincountyrivers.com. The
+   banner and headline sections of that page are county-owned copy, not
+   repo output. `directory.css` and `directory-map-link.js` are inlined
+   into the bundle at build time - edit the source files, never the bundle.
 
 The two halves talk across origins via postMessage; both ends pin origins
 exactly. `scripts/check.py` is the project lint and encodes the incident
@@ -34,9 +36,12 @@ history - read it before changing anything it covers.
   check, the check gets updated in the same commit with reasoning.
 - New accepted review findings either get fixed or become a new check in
   `scripts/check.py` - reviews ratchet into lint rules.
-- The WordPress bundle is deployed by hand-paste. A repo change is NOT
-  deployed until the bundle is rebuilt (no -dirty in its header) and
-  re-pasted. Map-side changes deploy via GitHub Pages on release, no paste.
+- The WordPress bundle is deployed by hand-paste into the page's Raw
+  Content element (Cornerstone). A repo change is NOT deployed until the
+  bundle is rebuilt (no -dirty in its header) and re-pasted. Map-side
+  changes deploy via GitHub Pages on release, no paste. A change to both
+  ends of the postMessage protocol needs the ordering guard in
+  RELEASING.md step 7 before anything is tagged.
 
 ## Embed contract (why the CSS/JS look the way they do)
 

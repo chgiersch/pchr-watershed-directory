@@ -38,8 +38,19 @@ tagged the previous release's commit).
        python3 scripts/build_directory.py --wordpress
 
    The output must NOT warn about a -dirty version, and the bundle header
-   must show the tag you just pushed. Paste the entire file over the
-   county page's HTML block. That paste IS the deployment.
+   must show the tag you just pushed. Open the county page in Cornerstone,
+   select the Raw Content element in the section below the headline, and
+   paste the entire file over its contents. Save. That paste IS the
+   deployment. Do not touch the banner or headline sections; they are
+   county-editable copy and never come from this repository.
+
+   Ordering guard: if the release changes both ends of the postMessage
+   protocol (directory-map-link.js AND index.html's message handling),
+   work out which end tolerates the other's old version BEFORE step 5.
+   The map goes live at the tag push; the county page changes at this
+   paste; whatever runs in between is the old script against the new map.
+   v1.5.0 was rolled back within the hour for exactly that (2026-09-10).
+   When the new script works against the old map, paste first, then tag.
 
 8. **Click through the county page:** map renders, popup opens with the
    bridge note, an org click scrolls to its entry, "Show on map" moves

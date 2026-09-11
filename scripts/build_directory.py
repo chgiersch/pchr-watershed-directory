@@ -435,10 +435,17 @@ PROTOTYPE_NOTE = """<p class="prototype-note">
 # (buttons are self-labeling; the map shows a first-click hint), so this list
 # is the reference copy, not the only teacher. Native <details>: keyboard
 # operable, screen-reader friendly, WPML-translatable, no script.
+# The intro reads as a directory of organizations, not of service areas -
+# the county contact's ask in the 9/9/26 site review, after the first
+# wording ("map and directory of water management service areas") led with
+# the map's geometry rather than the page's subject. It lives in the bundle
+# rather than the host page so the iframe's aria-describedby always resolves
+# and the wording ships under lint.
 MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
-    Interactive map and directory of water management service areas in the
-    Roaring Fork Watershed; only organizations serving the watershed appear
-    on this page.
+    A directory of the organizations that manage, protect and deliver water
+    in the Roaring Fork Watershed &ndash; local districts and towns, basin
+    agencies and statewide bodies &ndash; with a map of where each one
+    operates.
 </p>
 <details class="map-help">
   <summary>How to use this page</summary>

@@ -45,7 +45,19 @@
   --wmd-font-body: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
 
   --wmd-measure: 68ch;       /* comfortable reading width */
-  --wmd-gap: 1.5rem;
+
+  /* Design root size. Every length below that would normally be written in
+     rem is written calc(N * var(--wmd-rem)) instead, so N reads like the rem
+     it replaces but resolves against THIS value, not the host page's root.
+     The county theme sets html { font-size: 14px }; this stylesheet was
+     designed at 16px, and from 2026-09-02 to 2026-09-11 every rem on the
+     live page silently rendered at 14/16 scale (labels at 9.6px). 18px
+     matches the Cornerstone page templates, whose body text measures
+     17.85px (2026-09-11). The standalone page has a 16px root and never
+     showed the shrink - do not judge sizing there. The one @media rem is
+     fine: media-query rem resolves against the browser default, not html. */
+  --wmd-rem: 18px;
+  --wmd-gap: calc(1.5 * var(--wmd-rem));
 }
 
 /* Scoped to this feature's containers. A universal selector here would
@@ -60,15 +72,17 @@
    When this stylesheet is embedded in WordPress, a body rule would restyle
    the host page's header, footer, and navigation. On the standalone page
    these four selectors cover all visible content, so nothing is lost.
-   15px is a deliberate middle ground between the theme's 14px body text and
-   this stylesheet's original 16px - readable for a text-heavy directory
-   without visibly outsizing the surrounding site. */
+   Base text is the design root itself (--wmd-rem, see :root): the page
+   this ships on is a Cornerstone template whose own paragraphs run at
+   17.85px, and a smaller base read as a size down from the intro above
+   it (county review, 2026-09-11). It was 15px while the page used the
+   theme's default template at 14px body text. */
 .prototype-note,
 .map-panel,
 .directory,
 .page-footer {
   font-family: var(--wmd-font-body);
-  font-size: 15px;
+  font-size: var(--wmd-rem);
   line-height: 1.6;
   color: var(--wmd-ink);
 }
@@ -99,30 +113,30 @@ body {
   left: -9999px;
   top: 0;
   z-index: 100;
-  padding: 0.75rem 1.25rem;
+  padding: calc(0.75 * var(--wmd-rem)) calc(1.25 * var(--wmd-rem));
   background: var(--wmd-navy);
   color: #fff;
   text-decoration: none;
 }
 .skip-link:focus {
-  left: 0.5rem;
-  top: 0.5rem;
+  left: calc(0.5 * var(--wmd-rem));
+  top: calc(0.5 * var(--wmd-rem));
 }
 
 .page-header {
   background: var(--wmd-navy);
   color: #fff;
-  padding: 1.5rem 1.25rem;
+  padding: calc(1.5 * var(--wmd-rem)) calc(1.25 * var(--wmd-rem));
 }
 .page-header h1 {
   font-family: var(--wmd-font-head);
-  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  font-size: clamp(calc(1.35 * var(--wmd-rem)), 3vw, calc(1.9 * var(--wmd-rem)));
   margin: 0;
   line-height: 1.2;
 }
 .page-header p {
-  margin: 0.35rem 0 0;
-  font-size: 0.875rem;
+  margin: calc(0.35 * var(--wmd-rem)) 0 0;
+  font-size: calc(0.875 * var(--wmd-rem));
   opacity: 0.8;
 }
 
@@ -133,10 +147,10 @@ body {
    content. Text at 7.2:1 on this background. */
 .prototype-note {
   margin: 0;
-  padding: 0.6rem 1.25rem;
+  padding: calc(0.6 * var(--wmd-rem)) calc(1.25 * var(--wmd-rem));
   background: #fdf3d7;
   border-bottom: 1px solid #e8d089;
-  font-size: 0.8125rem;
+  font-size: calc(0.8125 * var(--wmd-rem));
   color: #5c4a12;
 }
 
@@ -156,7 +170,7 @@ body {
   z-index: 10;
   background: var(--wmd-paper);
   border-bottom: 1px solid var(--wmd-rule);
-  padding: 0.75rem 1rem;
+  padding: calc(0.75 * var(--wmd-rem)) calc(1 * var(--wmd-rem));
 }
 
 /* Full width rather than the reading measure: this is a short instruction
@@ -165,16 +179,16 @@ body {
    for two sentences than the height does. */
 .map-panel__intro {
   margin: 0;
-  padding: 0.75rem 1.25rem;
-  font-size: 0.8125rem;
+  padding: calc(0.75 * var(--wmd-rem)) calc(1.25 * var(--wmd-rem));
+  font-size: calc(0.8125 * var(--wmd-rem));
   color: var(--wmd-muted);
 }
 
 /* The folded how-to under the intro sentence. Quiet by design - reference
    copy for whoever wants it, one line of height for everyone else. */
 .map-help {
-  padding: 0 1.25rem 0.5rem;
-  font-size: 0.8125rem;
+  padding: 0 calc(1.25 * var(--wmd-rem)) calc(0.5 * var(--wmd-rem));
+  font-size: calc(0.8125 * var(--wmd-rem));
   color: var(--wmd-muted);
 }
 .map-help summary {
@@ -188,10 +202,10 @@ body {
   outline-offset: 2px;
 }
 .map-help ul {
-  margin: 0.5rem 0 0;
-  padding-left: 1.4rem;
+  margin: calc(0.5 * var(--wmd-rem)) 0 0;
+  padding-left: calc(1.4 * var(--wmd-rem));
 }
-.map-help li + li { margin-top: 0.35rem; }
+.map-help li + li { margin-top: calc(0.35 * var(--wmd-rem)); }
 
 .map-panel__frame {
   display: block;
@@ -217,8 +231,8 @@ body {
 
 /* ---- Directory ---- */
 .directory {
-  padding: 2rem 1.25rem 3rem;
-  max-width: 78rem;
+  padding: calc(2 * var(--wmd-rem)) calc(1.25 * var(--wmd-rem)) calc(3 * var(--wmd-rem));
+  max-width: calc(78 * var(--wmd-rem));
   margin: 0 auto;
 }
 
@@ -226,38 +240,39 @@ body {
    The last entry's own bottom hairline already closes each list, and a
    second full-width border above the next heading read as a dangling
    double line. Headings-plus-air is also the county homepage's idiom.
-   The gap must stay visibly larger than the ~0.9rem row rhythm within a
-   list, or adjacent sections merge into one. */
+   The gap must stay visibly larger than the ~0.9 x --wmd-rem row rhythm
+   within a list, or adjacent sections merge into one. */
 .dir-section + .dir-section {
-  margin-top: 2.5rem;
+  margin-top: calc(2.5 * var(--wmd-rem));
 }
 
 /* Section titles use the theme's heading green. At 3.6:1 against white this
    color passes WCAG 2.1 AA only under the large-text threshold (3:1 for bold
-   text at 18.66px and above); the clamp minimum of 1.35rem keeps the title
-   above that threshold at any viewport. Organization names (.org__name,
-   17px) fall under the 4.5:1 body-text requirement, which this green fails -
+   text at 18.66px and above); the clamp minimum of 1.35 x --wmd-rem (24.3px
+   at the 18px design root) keeps the title above that threshold at any
+   viewport. Organization names (.org__name, 1.0625 x --wmd-rem = 19.1px)
+   fall under the 4.5:1 body-text requirement, which this green fails -
    they remain navy for that reason. Do not apply --wmd-hr-green to text below
    the large-text threshold. */
 .dir-section__title {
   font-family: var(--wmd-font-head);
-  font-size: clamp(1.35rem, 2.4vw, 1.5rem);
+  font-size: clamp(calc(1.35 * var(--wmd-rem)), 2.4vw, calc(1.5 * var(--wmd-rem)));
   color: var(--wmd-hr-green);
-  margin: 0 0 0.35rem;
+  margin: 0 0 calc(0.35 * var(--wmd-rem));
   line-height: 1.25;
 }
 
 .dir-section__intro {
   max-width: var(--wmd-measure);
-  margin: 0 0 1rem;
+  margin: 0 0 calc(1 * var(--wmd-rem));
   color: var(--wmd-muted);
-  font-size: 0.9375rem;
+  font-size: calc(0.9375 * var(--wmd-rem));
 }
 
 .dir-section__note {
   max-width: var(--wmd-measure);
   margin: var(--wmd-gap) 0 0;
-  font-size: 0.875rem;
+  font-size: calc(0.875 * var(--wmd-rem));
   color: var(--wmd-muted);
   font-style: italic;
 }
@@ -267,7 +282,7 @@ body {
    just pushes the rest down predictably. Capped at a readable measure so the
    expanded prose doesn't run the full width of a desktop screen. */
 .dir-section__list {
-  max-width: 52rem;
+  max-width: calc(52 * var(--wmd-rem));
 }
 
 .org {
@@ -276,7 +291,7 @@ body {
      on this same element - without it the disclosure chevron sits right on
      top of the bar. Applied to every entry, not just the selected one, so
      nothing shifts sideways when a selection moves. */
-  padding-left: 0.6rem;
+  padding-left: calc(0.6 * var(--wmd-rem));
 }
 .org:first-of-type {
   border-top: 1px solid var(--wmd-rule);
@@ -286,8 +301,8 @@ body {
 .org__summary {
   display: flex;
   align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.9rem 0.25rem;
+  gap: calc(0.75 * var(--wmd-rem));
+  padding: calc(0.9 * var(--wmd-rem)) calc(0.25 * var(--wmd-rem));
   cursor: pointer;
   list-style: none;          /* hide the default triangle; we draw our own */
 }
@@ -300,9 +315,9 @@ body {
 .org__summary::before {
   content: '';
   flex: 0 0 auto;
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-top: 0.35rem;
+  width: calc(0.5 * var(--wmd-rem));
+  height: calc(0.5 * var(--wmd-rem));
+  margin-top: calc(0.35 * var(--wmd-rem));
   border-right: 2px solid var(--wmd-sky);
   border-bottom: 2px solid var(--wmd-sky);
   transform: rotate(-45deg);
@@ -323,10 +338,10 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: calc(0.75 * var(--wmd-rem));
   margin: 0;
   font-family: var(--wmd-font-head);
-  font-size: 1.0625rem;
+  font-size: calc(1.0625 * var(--wmd-rem));
   font-weight: 700;
   color: var(--wmd-navy);
   line-height: 1.35;
@@ -340,7 +355,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  column-gap: 0.6rem;
+  column-gap: calc(0.6 * var(--wmd-rem));
 }
 
 /* The org's reach, visible without expanding - a scan down the closed list
@@ -350,7 +365,7 @@ body {
    screen readers, which hear "name, extent, offers funding". */
 .org__extent {
   font-family: var(--wmd-font-body);
-  font-size: 0.8125rem;
+  font-size: calc(0.8125 * var(--wmd-rem));
   font-weight: 500;
   color: var(--wmd-muted);
 }
@@ -369,19 +384,19 @@ body {
    rather than opening all nineteen entries. */
 .org__flag {
   flex: 0 0 auto;
-  font-size: 0.6875rem;
+  font-size: calc(0.6875 * var(--wmd-rem));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #1c5f2e;            /* 5.9:1 on the pale green below */
   background: #e6f4ea;
   border-radius: 999px;
-  padding: 0.2rem 0.55rem;
+  padding: calc(0.2 * var(--wmd-rem)) calc(0.55 * var(--wmd-rem));
   white-space: nowrap;
 }
 
 .org__body {
-  padding: 0 0.25rem 1.25rem 1.75rem;
+  padding: 0 calc(0.25 * var(--wmd-rem)) calc(1.25 * var(--wmd-rem)) calc(1.75 * var(--wmd-rem));
 }
 
 /* The service-area line is doing real work: it's the text that carries the
@@ -390,37 +405,37 @@ body {
    two together answer "which provider, and from where". */
 .org__scope,
 .org__source {
-  margin: 0 0 0.625rem;
-  font-size: 0.9375rem;
+  margin: 0 0 calc(0.625 * var(--wmd-rem));
+  font-size: calc(0.9375 * var(--wmd-rem));
 }
 
 .org__desc {
-  margin: 0 0 0.875rem;
-  font-size: 0.9375rem;
+  margin: 0 0 calc(0.875 * var(--wmd-rem));
+  font-size: calc(0.9375 * var(--wmd-rem));
   color: #333;
 }
 
 .org__label {
   display: inline-block;
-  font-size: 0.6875rem;
+  font-size: calc(0.6875 * var(--wmd-rem));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--wmd-muted);
-  margin-right: 0.35rem;
+  margin-right: calc(0.35 * var(--wmd-rem));
 }
 
 .org__mission {
-  margin: 0 0 0.75rem;
-  font-size: 0.9375rem;
+  margin: 0 0 calc(0.75 * var(--wmd-rem));
+  font-size: calc(0.9375 * var(--wmd-rem));
   color: #333;
 }
 
 .org__meta {
-  margin: 0 0 0.75rem;
-  font-size: 0.875rem;
+  margin: 0 0 calc(0.75 * var(--wmd-rem));
+  font-size: calc(0.875 * var(--wmd-rem));
 }
-.org__meta-item + .org__meta-item { margin-top: 0.35rem; }
+.org__meta-item + .org__meta-item { margin-top: calc(0.35 * var(--wmd-rem)); }
 .org__meta dt { display: inline; }
 .org__meta dd { display: inline; margin: 0; }
 
@@ -430,7 +445,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: calc(0.5 * var(--wmd-rem));
   margin: 0;
 }
 
@@ -438,13 +453,13 @@ body {
 .org__site {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: calc(0.4 * var(--wmd-rem));
   font-family: inherit;
-  font-size: 0.875rem;
+  font-size: calc(0.875 * var(--wmd-rem));
   font-weight: 600;
   line-height: 1.2;
   border-radius: 999px;
-  padding: 0.42rem 0.9rem;
+  padding: calc(0.42 * var(--wmd-rem)) calc(0.9 * var(--wmd-rem));
   text-decoration: none;
   cursor: pointer;
 }
@@ -534,11 +549,11 @@ body {
 
 .page-footer {
   border-top: 1px solid var(--wmd-rule);
-  padding: 1.5rem 1.25rem 2.5rem;
+  padding: calc(1.5 * var(--wmd-rem)) calc(1.25 * var(--wmd-rem)) calc(2.5 * var(--wmd-rem));
 }
 .page-footer p {
   max-width: var(--wmd-measure);
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: calc(0.8125 * var(--wmd-rem));
   color: var(--wmd-muted);
 }

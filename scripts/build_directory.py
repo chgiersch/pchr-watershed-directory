@@ -45,7 +45,8 @@ USAGE
 -----
     python3 scripts/build_directory.py                # write directory.html
     python3 scripts/build_directory.py --wordpress      # self-contained bundle
-                                                        # for one WP HTML block
+                                                        # for the county page's
+                                                        # Raw Content element
 """
 
 import argparse
@@ -569,13 +570,22 @@ def git_version() -> str:
 
 
 def build_wordpress_bundle(fragment: str) -> str:
-    """One self-contained blob for a single CORE Custom HTML block.
+    """One self-contained blob for the county page's Raw Content element.
 
     Styles and script are inlined rather than managed as separate WordPress
     pieces (Additional CSS, an enhanced block plugin's CSS/JS tabs) so the
-    page has zero dependencies beyond WordPress core. Core blocks survive
-    theme swaps and plugin removals; per-plugin storage does not. The whole
-    update procedure becomes: regenerate, select all, paste over the block.
+    bundle has no dependencies of its own. The whole update procedure is:
+    regenerate, select all, paste over the element's contents.
+
+    The county page is a Cornerstone (Pro theme) layout, adopted 2026-09-11 so
+    the page could carry the site's full-bleed banner. Until then the bundle
+    sat in a core Custom HTML block and the header warned never to open the
+    page in Cornerstone; that warning was a precaution, never a tested fact.
+    A draft built in Cornerstone showed the Raw Content element passes the
+    style and script blocks through intact, the sticky map survives the
+    section/row/column wrappers, and both link directions work. Raw Content
+    specifically - the Text element runs paragraph auto-formatting over its
+    contents, which would break the markup.
     """
     css = (REPO / "directory.css").read_text()
     js = (REPO / "directory-map-link.js").read_text()
@@ -598,8 +608,12 @@ def build_wordpress_bundle(fragment: str) -> str:
   - Do not hand-edit this block. Content is generated from the repository
     above (scripts/build_directory.py --wordpress); regenerate and paste the
     whole block to update.
-  - Edit this page with the WordPress editor only. Opening it in Cornerstone
-    and saving will overwrite this block.
+  - This page is a Cornerstone layout. The bundle lives in a Raw Content
+    element in its own section below the banner and headline sections; to
+    update, open that element and paste over its contents. Keep the
+    element's shortcode processing off (the script contains square
+    brackets) and never move the bundle into a Text element, which
+    auto-formats paragraphs and breaks the markup.
   - Only an Administrator should edit and save this page. WordPress strips
     <script> tags on save for lower roles, which silently disables the
     map/directory linking.
@@ -634,7 +648,7 @@ def main():
         OUT_WORDPRESS.write_text(bundle)
         print(f"Wrote {OUT_WORDPRESS.relative_to(REPO)} ({len(bundle):,} chars)")
         print(f"  iframe points at {MAP_URL_PUBLISHED}")
-        print("  Paste the ENTIRE file into one core Custom HTML block.")
+        print("  Paste the ENTIRE file over the county page's Raw Content element.")
         print("  That URL serves from main - make sure main is current first.")
         if "-dirty" in bundle.splitlines()[2]:
             print("  WARNING: built from uncommitted changes (version is -dirty).")

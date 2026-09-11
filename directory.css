@@ -333,7 +333,7 @@ body {
 }
 
 /* Name + extent as one wrapping unit, so the flag stays pinned right while a
-   long extent ("Roaring Fork watershed - Water District 38...") wraps under
+   long extent ("Roaring Fork Watershed - Water District 38...") wraps under
    the name instead of shoving the flag off the row. */
 .org__title {
   flex: 1 1 auto;

@@ -78,7 +78,7 @@ SECTIONS = [
         # basin. Without it the heading doesn't distinguish itself from the
         # basin-scale section below.
         "Local watershed organizations",
-        "Organizations working at the scale of the Roaring Fork watershed or one "
+        "Organizations working at the scale of the Roaring Fork Watershed or one "
         "of its sub-watersheds - research, restoration, advocacy and regional "
         "planning.",
     ),
@@ -435,10 +435,17 @@ PROTOTYPE_NOTE = """<p class="prototype-note">
 # (buttons are self-labeling; the map shows a first-click hint), so this list
 # is the reference copy, not the only teacher. Native <details>: keyboard
 # operable, screen-reader friendly, WPML-translatable, no script.
+# The intro reads as a directory of organizations, not of service areas -
+# the county contact's ask in the 9/9/26 site review, after the first
+# wording ("map and directory of water management service areas") led with
+# the map's geometry rather than the page's subject. It lives in the bundle
+# rather than the host page so the iframe's aria-describedby always resolves
+# and the wording ships under lint.
 MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
-    Interactive map and directory of water management service areas in the
-    Roaring Fork watershed; only organizations serving the watershed appear
-    on this page.
+    A directory of the organizations that manage, protect and deliver water
+    in the Roaring Fork Watershed &ndash; local districts and towns, basin
+    agencies and statewide bodies &ndash; with a map of where each one
+    operates.
 </p>
 <details class="map-help">
   <summary>How to use this page</summary>
@@ -456,7 +463,7 @@ MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
   <iframe
     class="map-panel__frame"
     src="__MAP_URL__"
-    title="Map of water management service areas in the Roaring Fork watershed"
+    title="Map of water management service areas in the Roaring Fork Watershed"
     aria-describedby="map-intro"
     loading="lazy"></iframe>
 </div>"""
@@ -484,7 +491,14 @@ def build_fragment(orgs):
     out.append(f'  <h2 class="dir-section__title" id="caucuses">{esc(c["title"])}</h2>')
     out.append(f'  <p class="dir-section__intro">{esc(c["intro"])}</p>')
     out.append('  <div class="dir-section__list">')
-    out.append("\n".join(render_caucus_entry(*e) for e in c["entries"]))
+    # Same alphabetical rule as the org sections. The entries are typed by
+    # hand in CAUCUS_SECTION and the county's 9/10 review found them out of
+    # order (Snowmass-Capitol Creek listed before Crystal River): the org sort
+    # only ever sees orgs.json, so nothing had touched this list. Sorting here
+    # rather than reordering the tuples means the next caucus added lands in
+    # place without anyone remembering the rule.
+    entries = sorted(c["entries"], key=lambda e: e[0].lower())
+    out.append("\n".join(render_caucus_entry(*e) for e in entries))
     out.append("  </div>")
     out.append(f'  <p class="dir-section__note">{esc(c["footer"])}</p>')
     out.append("</section>")
@@ -522,7 +536,7 @@ __FRAGMENT__
 
 <footer class="page-footer">
   <p>
-    Service-area boundaries are clipped to the Roaring Fork watershed and are
+    Service-area boundaries are clipped to the Roaring Fork Watershed and are
     not legal boundaries. Several districts extend beyond the watershed; each
     organization's full jurisdiction is described in its entry above.
   </p>

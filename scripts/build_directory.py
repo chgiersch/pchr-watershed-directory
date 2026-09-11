@@ -78,7 +78,7 @@ SECTIONS = [
         # basin. Without it the heading doesn't distinguish itself from the
         # basin-scale section below.
         "Local watershed organizations",
-        "Organizations working at the scale of the Roaring Fork watershed or one "
+        "Organizations working at the scale of the Roaring Fork Watershed or one "
         "of its sub-watersheds - research, restoration, advocacy and regional "
         "planning.",
     ),
@@ -437,7 +437,7 @@ PROTOTYPE_NOTE = """<p class="prototype-note">
 # operable, screen-reader friendly, WPML-translatable, no script.
 MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
     Interactive map and directory of water management service areas in the
-    Roaring Fork watershed; only organizations serving the watershed appear
+    Roaring Fork Watershed; only organizations serving the watershed appear
     on this page.
 </p>
 <details class="map-help">
@@ -456,7 +456,7 @@ MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
   <iframe
     class="map-panel__frame"
     src="__MAP_URL__"
-    title="Map of water management service areas in the Roaring Fork watershed"
+    title="Map of water management service areas in the Roaring Fork Watershed"
     aria-describedby="map-intro"
     loading="lazy"></iframe>
 </div>"""
@@ -522,7 +522,7 @@ __FRAGMENT__
 
 <footer class="page-footer">
   <p>
-    Service-area boundaries are clipped to the Roaring Fork watershed and are
+    Service-area boundaries are clipped to the Roaring Fork Watershed and are
     not legal boundaries. Several districts extend beyond the watershed; each
     organization's full jurisdiction is described in its entry above.
   </p>

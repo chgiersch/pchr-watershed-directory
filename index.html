@@ -365,7 +365,7 @@
 </header>
 
 <div id="map" role="region" aria-label="Roaring Fork Watershed map"></div>
-<div class="map-note">Proof of concept · 17 water management organizations · 10 service areas mapped within the Roaring Fork watershed; watershed-wide and statewide organizations are listed rather than drawn</div>
+<div class="map-note">Proof of concept · 17 water management organizations · 10 service areas mapped within the Roaring Fork Watershed; watershed-wide and statewide organizations are listed rather than drawn</div>
 
 <script>
   // Shown whenever the map cannot be built - the CDN scripts never arrived,
@@ -1539,7 +1539,7 @@
         return [
           firstSection,
           alsoNote,
-          section('Roaring Fork watershed wide', watershedOrgs),
+          section('Roaring Fork Watershed wide', watershedOrgs),
           section('State or basin wide', regionalOrgs)
         ].join('');
       }
@@ -1868,7 +1868,7 @@
       map.getCanvas().setAttribute('role', 'application');
       map.getCanvas().setAttribute(
         'aria-label',
-        'Roaring Fork watershed map. Use bracket keys to move between service ' +
+        'Roaring Fork Watershed map. Use bracket keys to move between service ' +
         'areas, Enter for details, Escape to close. Arrow keys pan.'
       );
 

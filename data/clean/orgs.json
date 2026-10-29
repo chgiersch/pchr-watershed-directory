@@ -28,7 +28,7 @@
     "section": "Water providers",
     "category": "Water Providers",
     "tier": "service_area",
-    "scope": "Eagle, Garfield & Pitkin counties",
+    "scope": "Areas of Eagle, Garfield & Pitkin counties",
     "mission": "To conserve, develop and stabilize supplies of water for domestic, irrigation, manufacturing and other beneficial uses within those parts of Eagle, Garfield and Pitkin counties included within its boundaries.",
     "description": "The BWCD holds various water rights decrees resulting from adjudications connected with the Basalt Project, whose principal feature is Ruedi Reservoir above Basalt. The District holds contracts for storage rights in Ruedi Reservoir and Green Mountain Reservoir as well as direct flow rights, which it uses to secure dependable water supplies for water users within its boundaries. These rights provide year-round water right protection to its constituents. In most cases, those contracting with the District obtain their physical water supply from groundwater wells or springs in the Roaring Fork and Fryingpan river basins. The standard homeowner contract is 100 gallons per person per day. Monthly meetings are open to the public.",
     "funding_model": "Budget of approximately $150,000, funded mainly through water contracts plus a small amount from mill levy taxes.",
@@ -352,11 +352,13 @@
     "category": "Water Providers",
     "tier": "service_area",
     "scope": "Fryingpan-Arkansas Project - diverts to the East Slope",
-    "description": "Administers the water of the Fryingpan-Arkansas Project, the federal transmountain diversion that collects water from the upper Fryingpan River and Hunter Creek and delivers it to cities and farms in the Arkansas River valley. The District spans nine counties on the East Slope; its presence in the Roaring Fork Watershed is the project's collection system in the upper Fryingpan valley.",
+    "mission": "Water is essential for life. We exist to make life better by effectively developing, protecting, and managing water resources.",
+    "description": "The Fryingpan-Arkansas Project is the second-largest transmountain diversion in the state, supplying southeastern Colorado with improved supplemental water supply for irrigation, municipal and industrial uses, hydroelectric power generation, and recreational opportunities. The Project also provides flood control for the area and is designed to maintain or improve fish and wildlife habitats. It acquired its name from the fact that it collects approximately 57,400 acre-feet of water each year from the Fryingpan River basin on the western slope of the Continental Divide and delivers it via the Arkansas River to the eastern slope.",
     "water_source": "The upper Fryingpan River and Hunter Creek.",
+    "funding_model": "Funded through property tax assessments (mill levies) on all taxable property within the district's boundaries, along with funding from the U.S. Bureau of Reclamation and state low-interest loans and grants from the Colorado Water Conservation Board (CWCB) and the Colorado Water Resources and Power Development Authority (CWRPDA).",
     "provides_funding": "No",
     "website": "secwcd.org",
-    "category_confirmed": false,
-    "caveat": "Added 10/23/26 at the program coordinator's direction (her answers in red moved both transmountain diversions to Water providers, directory-only). The roster row carried only the website and water source; the description was drafted by the maintainer from public project information and the mission omitted rather than invented - both pending her sign-off, as is provides_funding No (assumption). No funding_model known."
+    "category_confirmed": true,
+    "caveat": "Added 10/23/26 at the program coordinator's direction (her answers in red moved both transmountain diversions to Water providers, directory-only). Mission, description and funding model adopted 10/28/26 from the roster row she completed; her row's trailing water-source sentence lives in water_source instead. provides_funding No remains an assumption - that cell is blank in her row."
   }
 ]

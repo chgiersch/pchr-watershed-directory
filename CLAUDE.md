@@ -93,3 +93,6 @@ debug without its author present. Explain reasoning at decision points, show
 diffs before applying when asked, and prefer one small reviewed change over
 three fast ones. The `.claude/skills/annotated-coding` and
 `.claude/skills/dev-workflow` skills govern this in detail - honor them.
+They are the depersonalised handoff versions of the maintainer's user-level
+skills of the same name, and the repo copies win here: wording differs
+(roles, not names), the rules do not. Improve a rule in both places.

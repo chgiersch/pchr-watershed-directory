@@ -1498,20 +1498,23 @@
       const regionalOrgs  = orgs.filter(o => o.tier === 'regional');
 
       // Three tiers, narrowing to widening: the shape you actually clicked,
-      // then the watershed, then basin and state. `boundary` is the properties
+      // then the watershed, then basin and state. Popup wording - the
+      // heading, the bridge line, the section labels - follows the program
+      // coordinator's October 2026 review; it is reviewed copy, not ours
+      // to polish. `boundary` is the properties
       // of the highlighted polygon, or null when the click landed on open
       // ground inside the watershed.
       function buildPopupHtml(boundary, localOrgs, extraHtml = '') {
-        // A named watershed says so in the heading - "Highlighted extent"
+        // A named watershed says so in the heading - "Highlighted service area"
         // alone doesn't tell you the Crystal River is what's lit up. Only
         // shapes carrying a HUC code are watersheds; the rest are districts
         // and municipalities whose name is already the org name below.
-        let extentLabel = 'Highlighted extent';
+        let extentLabel = 'Highlighted service area';
         if (boundary && boundary.huc_code && boundary.label) {
           extentLabel += ` &middot; ${esc(boundary.label)}`;
         }
 
-        // Open ground gets no "Highlighted extent" header - nothing is
+        // Open ground gets no "Highlighted service area" header - nothing is
         // highlighted, and the old wording ("no specific service area covers
         // this point") read as false once wider extents existed: the
         // watershed-wide and statewide orgs listed right below DO cover it.
@@ -1533,14 +1536,14 @@
         // genuinely serve the clicked point too. Skipped on open-ground
         // clicks, where the no-service-area message already says it.
         const alsoNote = localOrgs.length
-          ? '<div class="popup-note">Every organization below also serves this location:</div>'
+          ? '<div class="popup-note">Organizations below also serve this location.</div>'
           : '';
 
         return [
           firstSection,
           alsoNote,
-          section('Roaring Fork Watershed wide', watershedOrgs),
-          section('State or basin wide', regionalOrgs)
+          section('Roaring Fork Watershed-wide', watershedOrgs),
+          section('State or basin-wide', regionalOrgs)
         ].join('');
       }
 

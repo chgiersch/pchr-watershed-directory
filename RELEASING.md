@@ -16,6 +16,16 @@ tagged the previous release's commit).
    or zero, the base is wrong. Merge with a merge commit (never squash -
    it flattens every commit message into one).
 
+   `main` accepts no direct pushes (GitHub ruleset, 2026-09-14) - every
+   commit on it arrives through a PR, this one included.
+
+   If `main` currently carries a revert of a previous release merge (a
+   rollback, as after v1.5.0 on 2026-09-10), revert that revert FIRST, on
+   its own branch off `main`, merged through its own PR - git considers
+   the rolled-back changes already merged, so a plain release PR would
+   silently leave them out of the tree. Afterwards check
+   `git diff main dev` - it must show only the work you expect to ship.
+
 4. **Verify before tagging.** This is the guard:
 
        git switch main

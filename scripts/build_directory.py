@@ -112,8 +112,8 @@ CAUCUS_SECTION = {
     "intro": (
         "Pitkin County has 13 officially recognized caucuses - neighborhood "
         "organizations that advise the Board of County Commissioners on land "
-        "use and other matters affecting their area. Two are named for the "
-        "creeks they sit on and regularly engage on water issues."
+        "use and other matters affecting their area. Three are named for the "
+        "waterways they sit on and regularly engage on water issues."
     ),
     "entries": [
         (
@@ -123,6 +123,19 @@ CAUCUS_SECTION = {
             "valleys and has pursued projects to protect stream flows in both "
             "creeks.",
             "snowcapcaucus.org",
+        ),
+        (
+            "Upper Frying Pan Valley Caucus",
+            "Upper Fryingpan River valley",
+            "Also known as the Frying Pan Caucus. Encompasses all properties "
+            "and watersheds from Ruedi Dam east up the Frying Pan River to "
+            "the Continental Divide, including tributaries in Pitkin and "
+            "Eagle counties. Formed in January 1997, a legally constituted "
+            "neighborhood coalition acting as a local planning and advisory "
+            "body for residents and property owners, guided by the Upper "
+            "Fryingpan Valley Master Plan, a long-range framework for land "
+            "use and development.",
+            None,
         ),
         (
             "Crystal River Caucus",
@@ -271,6 +284,9 @@ def funding_badge(value, who):
             f"got {raw!r}")
     offers = m.group(1).lower() == "yes"
     detail = m.group(2).strip() if offers else ""
+    # Rendered as its own sentence under the label - capitalize the first
+    # word whatever the roster wrote (October county review).
+    detail = detail[:1].upper() + detail[1:]
     return offers, detail
 
 

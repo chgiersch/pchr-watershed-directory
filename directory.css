@@ -288,6 +288,13 @@ body {
   font-size: calc(0.9375 * var(--wmd-rem));
 }
 
+/* A note in the lead position (right under the section intro) qualifies
+   the list before it is read - the footer variant's big top gap would
+   detach it from the intro it belongs to. */
+.dir-section__note--lead {
+  margin: calc(-0.5 * var(--wmd-rem)) 0 calc(1 * var(--wmd-rem));
+}
+
 .dir-section__note {
   max-width: var(--wmd-measure);
   margin: var(--wmd-gap) 0 0;

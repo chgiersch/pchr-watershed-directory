@@ -101,6 +101,16 @@ SECTIONS = [
         "The districts and municipalities that deliver water, treat wastewater, "
         "or hold water rights for a defined service area. These are the "
         "organizations most likely to serve a specific address.",
+        # Both sentences are the program coordinator's (the first from her
+        # October call notes, the second from her 10/23 answers in red,
+        # verbatim). They qualify the section's claim to completeness, so
+        # they sit right under the intro rather than at the section's foot.
+        "Note: there are smaller water providers serving individual rural "
+        "subdivisions that aren't listed here. The transmountain diversion "
+        "company and project listed are not direct retail water providers "
+        "to households, but rather bulk water suppliers or infrastructure "
+        "systems that transport water across the Continental Divide from "
+        "the Western Slope to the Eastern Slope of Colorado.",
     ),
 ]
 
@@ -464,10 +474,9 @@ PROTOTYPE_NOTE = """<p class="prototype-note">
 # rather than the host page so the iframe's aria-describedby always resolves
 # and the wording ships under lint.
 MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
-    A directory of the organizations that manage, protect and deliver water
-    in the Roaring Fork Watershed &ndash; local districts and towns, basin
-    agencies and statewide bodies &ndash; with a map of where each one
-    operates.
+    A comprehensive directory of the agencies and organizations that manage
+    water in the Roaring Fork Watershed &ndash; paired with an interactive
+    map showing their operating areas within the watershed.
 </p>
 <details class="map-help">
   <summary>How to use this page</summary>
@@ -491,7 +500,12 @@ MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
 
 def build_fragment(orgs):
     out = []
-    for title, intro in SECTIONS:
+    for entry in SECTIONS:
+        # A section is (title, intro) or (title, intro, note) - the note is
+        # a qualifier on the section's completeness and renders between the
+        # intro and the list, where a reader forms that expectation.
+        title, intro = entry[0], entry[1]
+        note = entry[2] if len(entry) > 2 else None
         members = [o for o in orgs if o.get("section") == title]
         if not members:
             continue
@@ -501,6 +515,8 @@ def build_fragment(orgs):
         out.append(f'<section class="dir-section" aria-labelledby="{slug}">')
         out.append(f'  <h2 class="dir-section__title" id="{slug}">{esc(title)}</h2>')
         out.append(f'  <p class="dir-section__intro">{esc(intro)}</p>')
+        if note:
+            out.append(f'  <p class="dir-section__note dir-section__note--lead">{esc(note)}</p>')
         out.append('  <div class="dir-section__list">')
         out.append("\n".join(render_entry(o) for o in members))
         out.append("  </div>")
@@ -683,7 +699,7 @@ def main():
     for o in orgs:
         counts[o.get("section", "?")] = counts.get(o.get("section", "?"), 0) + 1
     print(f"Wrote {OUT_PAGE.relative_to(REPO)}")
-    for title, _ in SECTIONS:
+    for title, *_ in SECTIONS:   # sections are 2- or 3-tuples, see SECTIONS
         print(f"  {title:32} {counts.get(title, 0)}")
     print(f"  {'Caucuses':32} {len(CAUCUS_SECTION['entries'])}")
 

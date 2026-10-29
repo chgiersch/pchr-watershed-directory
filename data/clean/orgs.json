@@ -24,6 +24,7 @@
   {
     "org_name": "Basalt Water Conservancy District",
     "org_short": "BWCD",
+    "water_source": "Diversions off the Roaring Fork River and its tributaries, with storage in Ruedi and Green Mountain reservoirs.",
     "section": "Water providers",
     "category": "Water Providers",
     "tier": "service_area",
@@ -182,17 +183,18 @@
     "scope": "Aspen Glen, Coryell Ranch, Midland Point & Ironbridge",
     "mission": "Distribution and supply of water for domestic and other uses, collection and treatment of sewage from District customers, and maintenance, repair and replacement of the mains, hydrants, valves and service facilities the District owns.",
     "description": "Established on 5 May 1994. The District currently provides water and sewer service to the Aspen Glen, Coryell Ranch, Midland Point and Ironbridge developments, along with Riverview School.",
-    "water_source": "Municipal supply, delivered by water main.",
+    "water_source": "Water mains from the municipal supply, sourced from the Roaring Fork River.",
     "funding_model": "Special district - user rates and taxes.",
     "provides_funding": "No",
     "website": "rfwsd.com",
     "boundary_id": "rfwsd_boundary",
     "category_confirmed": true,
-    "caveat": "Real official boundary from Colorado DOLA, 7/28/26. Which municipality supplies the water is being confirmed with the county (9/9/26)."
+    "caveat": "Real official boundary from Colorado DOLA, 7/28/26. Source confirmed as the Roaring Fork River by the program coordinator, 10/23/26."
   },
   {
     "org_name": "Mid Valley Metropolitan District",
     "org_short": "MVMD",
+    "water_source": "A series of wells throughout the mid-valley area.",
     "section": "Water providers",
     "category": "Water Providers",
     "tier": "service_area",
@@ -209,6 +211,7 @@
   {
     "org_name": "West Divide Water Conservancy District",
     "org_short": "WDWCD",
+    "water_source": "Augmentation releases from Ruedi, Green Mountain and Wolford Mountain reservoirs.",
     "section": "Water providers",
     "category": "Water Providers",
     "tier": "service_area",
@@ -313,18 +316,18 @@
     "org_name": "Twin Lakes Reservoir and Canal Company",
     "org_short": "TLRCC",
     "abbr_hidden": true,
-    "section": "Basin and statewide organizations",
+    "section": "Water providers",
     "category": "Water Providers",
-    "tier": "regional",
+    "tier": "service_area",
     "scope": "Upper Roaring Fork headwaters - diverts to the East Slope",
+    "water_source": "A 45-square-mile collection area in the upper Roaring Fork subbasin - Lost Man, Lincoln and Grizzly creeks.",
     "mission": "Stores and distributes irrigation water for the mutual benefit of its company stockholders and agricultural users.",
     "description": "Operates the Independence Pass Transmountain Diversion System, collecting water from a 45-square-mile area of the upper Roaring Fork subbasin - including Lost Man Creek, Lincoln Creek and Grizzly Creek - and routing it through the Twin Lakes Tunnel into Twin Lakes Reservoir in the Arkansas River watershed, the fifth-largest transmountain diversion in the state. Provides water for Colorado Springs, Pueblo, Pueblo West and parts of Aurora, all from the Roaring Fork River, typically diverting around 38,000 acre-feet annually with rights up to 46,000 acre-feet. Western Slope communities and local groups, including Pitkin County and the Roaring Fork Conservancy, frequently collaborate or negotiate water-sharing agreements with the company to balance East Slope diversions with instream flow needs in the Roaring Fork Valley.",
     "funding_model": "Water rates in Colorado Springs, Pueblo, Pueblo West and Aurora.",
     "provides_funding": "No",
     "website": "",
-    "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
-    "caveat": "Added 10/2026 from the program coordinator's roster on the recommendation of a watershed-organization director. No public website - the company is reachable by mail in Ordway, CO. provides_funding answered No by assumption (a mutual ditch company); pending the program coordinator's confirmation. abbr_hidden because nobody uses an initialism for the company. No boundary of its own - points at the watershed like the other basin/statewide rows; its collection area is the upper Roaring Fork subbasin."
+    "caveat": "Added 10/2026 from the program coordinator's roster on the recommendation of a watershed-organization director. No public website - the company is reachable by mail in Ordway, CO. No website and no funding confirmed by the program coordinator, 10/23/26, who also moved it to Water providers and made it directory-only (no boundary, no map presence) - it is a bulk diverter, not a retail server, and the section note says so. abbr_hidden because nobody uses an initialism for the company."
   },
   {
     "org_name": "U.S. Bureau of Reclamation",
@@ -336,10 +339,24 @@
     "mission": "To manage, develop and protect water and related resources in an environmentally and economically sound manner in the interest of the American public.",
     "description": "Established in 1902, the Bureau of Reclamation is best known for the dams, powerplants and canals it constructed in the 17 western states, and today manages water to help western states, Native American Tribes and others meet new water needs and balance the many competing uses of water in the West. In the Roaring Fork Watershed, Reclamation operates Ruedi Reservoir and the Fryingpan-Arkansas Project, a major transmountain diversion off the Fryingpan River and Hunter Creek that provides water to agriculture in the Arkansas River valley.",
     "funding_model": "Federal government.",
-    "provides_funding": "Yes - substantial funding through programs like WaterSMART, the Inflation Reduction Act and the Investing in America agenda.",
+    "provides_funding": "Yes - substantial funding through programs like WaterSMART and the Inflation Reduction Act (IRA).",
     "website": "usbr.gov",
     "boundary_id": "huc8_roaring_fork",
     "category_confirmed": false,
     "caveat": "Added 10/2026 from the program coordinator's roster on the recommendation of a watershed-organization director (part of the Dept. of the Interior). No extent of its own - points at the watershed; the agency operates across 17 western states, locally running Ruedi Reservoir and the Fryingpan-Arkansas diversion."
+  },
+  {
+    "org_name": "Southeastern Colorado Water Conservancy District",
+    "org_short": "SECWCD",
+    "section": "Water providers",
+    "category": "Water Providers",
+    "tier": "service_area",
+    "scope": "Fryingpan-Arkansas Project - diverts to the East Slope",
+    "description": "Administers the water of the Fryingpan-Arkansas Project, the federal transmountain diversion that collects water from the upper Fryingpan River and Hunter Creek and delivers it to cities and farms in the Arkansas River valley. The District spans nine counties on the East Slope; its presence in the Roaring Fork Watershed is the project's collection system in the upper Fryingpan valley.",
+    "water_source": "The upper Fryingpan River and Hunter Creek.",
+    "provides_funding": "No",
+    "website": "secwcd.org",
+    "category_confirmed": false,
+    "caveat": "Added 10/23/26 at the program coordinator's direction (her answers in red moved both transmountain diversions to Water providers, directory-only). The roster row carried only the website and water source; the description was drafted by the maintainer from public project information and the mission omitted rather than invented - both pending her sign-off, as is provides_funding No (assumption). No funding_model known."
   }
 ]

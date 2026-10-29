@@ -212,7 +212,7 @@
     "section": "Water providers",
     "category": "Water Providers",
     "tier": "service_area",
-    "scope": "Extends west and north beyond the watershed",
+    "scope": "Garfield, Pitkin & Mesa counties, west of the Crystal River",
     "mission": "To provide water right augmentation supplies within the District's service areas for all beneficial uses, and to promote the health, safety and welfare of the public while providing such service.",
     "description": "West Divide has decreed several regional water right plans for augmentation that provide a legal supply of water to its constituents. This legal supply allows contractees to continue using water when they are out of priority, without being curtailed or having to go through a lengthy water court process to decree their own augmentation plan. Water is released from upstream reservoirs - Ruedi, Green Mountain and Wolford Mountain - to replace water used by District contractees who are out of priority. West Divide is also involved in water supply planning for existing and future demands within the District, and in monitoring and managing water quality. A typical contract is 350 gallons per home per day.",
     "funding_model": "Water allotment contracts.",
@@ -258,6 +258,7 @@
   {
     "org_name": "City of Glenwood Springs",
     "org_short": "GWS",
+    "abbr_hidden": true,
     "section": "Water providers",
     "category": "Governance & Policy",
     "tier": "service_area",

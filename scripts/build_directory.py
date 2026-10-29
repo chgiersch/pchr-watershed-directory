@@ -91,10 +91,10 @@ SECTIONS = [
         # heading here than in the map popup. The popup groups by geographic
         # extent, this groups by type of body. Both are right on their own axis.
         "Basin and statewide organizations",
-        "Agencies and bodies that set water policy, administer water rights and "
-        "fund projects at state or Colorado River basin scale. Their "
-        "jurisdictions reach well beyond the Roaring Fork - each entry states "
-        "its actual extent.",
+        "Agencies and organizations that set water policy, administer water "
+        "rights and fund projects at state or Colorado River basin scale. "
+        "Their jurisdictions reach well beyond the Roaring Fork Watershed – "
+        "each entry states its service area.",
     ),
     (
         "Water providers",
@@ -234,7 +234,12 @@ def display_name(org):
     """
     name = org["org_name"]
     short = org.get("org_short", "")
-    if not short or short.lower() in name.lower():
+    # abbr_hidden: the short code stays (it is the anchor id and the map
+    # popup's key) but never renders. Added for Glenwood Springs - the
+    # other municipalities skip the abbreviation via the substring rule
+    # above, so "(GWS)" made one town look branded when nobody uses the
+    # initialism (October county review).
+    if not short or short.lower() in name.lower() or org.get("abbr_hidden"):
         return esc(name)
     return f'{esc(name)} <span class="org__abbr">({esc(short)})</span>'
 
@@ -452,12 +457,10 @@ MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
   <summary>How to use this page</summary>
   <ul>
     <li>Click any colored area on the map to see the organizations that
-        serve it, then select one to jump to its full entry below.</li>
-    <li>Press &ldquo;Show on map&rdquo; in any listing to highlight that
-        organization&rsquo;s territory &ndash; statewide and basin
-        organizations zoom out to their full extent within Colorado.</li>
-    <li>The house button on the map returns to the Roaring Fork
-        watershed view.</li>
+        serve it. Click on any of the listed organizations to jump to its
+        full entry below.</li>
+    <li>Click &ldquo;Show on map&rdquo; at the bottom of any listing to
+        highlight that organization&rsquo;s service area.</li>
   </ul>
 </details>
 <div class="map-panel">
@@ -539,7 +542,7 @@ __FRAGMENT__
   <p>
     Service-area boundaries are clipped to the Roaring Fork Watershed and are
     not legal boundaries. Several districts extend beyond the watershed; each
-    organization's full jurisdiction is described in its entry above.
+    organization's full service area is described in its entry above.
   </p>
 </footer>
 

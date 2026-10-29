@@ -308,5 +308,38 @@
     "priorities_2026": [
       "Measurement Rules."
     ]
+  },
+  {
+    "org_name": "Twin Lakes Reservoir and Canal Company",
+    "org_short": "TLRCC",
+    "abbr_hidden": true,
+    "section": "Basin and statewide organizations",
+    "category": "Water Providers",
+    "tier": "regional",
+    "scope": "Upper Roaring Fork headwaters - diverts to the East Slope",
+    "mission": "Stores and distributes irrigation water for the mutual benefit of its company stockholders and agricultural users.",
+    "description": "Operates the Independence Pass Transmountain Diversion System, collecting water from a 45-square-mile area of the upper Roaring Fork subbasin - including Lost Man Creek, Lincoln Creek and Grizzly Creek - and routing it through the Twin Lakes Tunnel into Twin Lakes Reservoir in the Arkansas River watershed, the fifth-largest transmountain diversion in the state. Provides water for Colorado Springs, Pueblo, Pueblo West and parts of Aurora, all from the Roaring Fork River, typically diverting around 38,000 acre-feet annually with rights up to 46,000 acre-feet. Western Slope communities and local groups, including Pitkin County and the Roaring Fork Conservancy, frequently collaborate or negotiate water-sharing agreements with the company to balance East Slope diversions with instream flow needs in the Roaring Fork Valley.",
+    "funding_model": "Water rates in Colorado Springs, Pueblo, Pueblo West and Aurora.",
+    "provides_funding": "No",
+    "website": "",
+    "boundary_id": "huc8_roaring_fork",
+    "category_confirmed": false,
+    "caveat": "Added 10/2026 from the program coordinator's roster on the recommendation of a watershed-organization director. No public website - the company is reachable by mail in Ordway, CO. provides_funding answered No by assumption (a mutual ditch company); pending the program coordinator's confirmation. abbr_hidden because nobody uses an initialism for the company. No boundary of its own - points at the watershed like the other basin/statewide rows; its collection area is the upper Roaring Fork subbasin."
+  },
+  {
+    "org_name": "U.S. Bureau of Reclamation",
+    "org_short": "USBR",
+    "section": "Basin and statewide organizations",
+    "category": "Governance & Policy",
+    "tier": "regional",
+    "scope": "Federal - 17 western states",
+    "mission": "To manage, develop and protect water and related resources in an environmentally and economically sound manner in the interest of the American public.",
+    "description": "Established in 1902, the Bureau of Reclamation is best known for the dams, powerplants and canals it constructed in the 17 western states, and today manages water to help western states, Native American Tribes and others meet new water needs and balance the many competing uses of water in the West. In the Roaring Fork Watershed, Reclamation operates Ruedi Reservoir and the Fryingpan-Arkansas Project, a major transmountain diversion off the Fryingpan River and Hunter Creek that provides water to agriculture in the Arkansas River valley.",
+    "funding_model": "Federal government.",
+    "provides_funding": "Yes - substantial funding through programs like WaterSMART, the Inflation Reduction Act and the Investing in America agenda.",
+    "website": "usbr.gov",
+    "boundary_id": "huc8_roaring_fork",
+    "category_confirmed": false,
+    "caveat": "Added 10/2026 from the program coordinator's roster on the recommendation of a watershed-organization director (part of the Dept. of the Interior). No extent of its own - points at the watershed; the agency operates across 17 western states, locally running Ruedi Reservoir and the Fryingpan-Arkansas diversion."
   }
 ]

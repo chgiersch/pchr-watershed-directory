@@ -66,7 +66,7 @@ history - read it before changing anything it covers.
   fragments as commands.
 - Comments explain WHY and name the incident they prevent, matching the
   style already in the codebase.
-- Data lives in `data/clean/orgs.json` (17 orgs) and
+- Data lives in `data/clean/orgs.json` (19 orgs) and
   `data/clean/boundaries.geojson` (11 features); the generator and map
   both index them. Section strings must match the generator's SECTIONS
   exactly - a mismatch silently renders an empty section.

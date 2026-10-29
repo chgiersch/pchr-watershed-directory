@@ -45,6 +45,11 @@
   --wmd-font-body: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
 
   --wmd-measure: 68ch;       /* comfortable reading width */
+  /* Map iframe height. A token rather than a literal because the sticky
+     section titles pin exactly one map-panel below the viewport top, and
+     the two rules must agree or the titles pin into (or float below) the
+     map's bottom edge. max() bakes in the old min-height: 260px floor. */
+  --wmd-frame-h: max(260px, min(52vh, 460px));
 
   /* Design root size. Every length below that would normally be written in
      rem is written calc(N * var(--wmd-rem)) instead, so N reads like the rem
@@ -210,8 +215,7 @@ body {
 .map-panel__frame {
   display: block;
   width: 100%;
-  height: min(52vh, 460px);
-  min-height: 260px;
+  height: var(--wmd-frame-h);   /* floor included in the token's max() */
   border: 1px solid var(--wmd-rule);
   border-radius: 8px;
 }
@@ -221,12 +225,17 @@ body {
 @media (max-width: 40rem) {
   .map-panel { position: static; }
   .map-panel__frame { height: 44vh; }
+  /* No pinned map to clear on a phone - titles pin to the viewport top. */
+  .dir-section__title { top: 0; }
 }
 
 /* Respect a user who has asked for less motion - sticky elements that track
    scrolling are a common trigger. */
 @media (prefers-reduced-motion: reduce) {
   .map-panel { position: static; }
+  /* Same reasoning as the panel: elements that track scrolling are a
+     common vestibular trigger, so the titles scroll normally too. */
+  .dir-section__title { position: static; }
 }
 
 /* ---- Directory ---- */
@@ -260,6 +269,16 @@ body {
   color: var(--wmd-hr-green);
   margin: 0 0 calc(0.35 * var(--wmd-rem));
   line-height: 1.25;
+  /* Pins just below the map panel while its own section scrolls past, so
+     a reader deep in a long section still sees which group they are in.
+     top = frame height + the panel's vertical padding (2 x 0.75rem) + its
+     1px border - i.e. exactly the panel's pinned height. z-index sits
+     under the panel (10) and over entry content; the background is
+     required or entry text scrolls through the letters. */
+  position: sticky;
+  top: calc(var(--wmd-frame-h) + 1.5 * var(--wmd-rem) + 1px);
+  z-index: 2;
+  background: var(--wmd-paper);
 }
 
 .dir-section__intro {

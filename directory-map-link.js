@@ -200,6 +200,13 @@
         if (panel && window.getComputedStyle(panel).position === 'sticky') {
           overlap = panel.getBoundingClientRect().height;
         }
+        // The section title pins just below the panel, so the target must
+        // clear that band too or the entry's own heading lands under it.
+        var title = target.closest('.dir-section');
+        title = title && title.querySelector('.dir-section__title');
+        if (title && window.getComputedStyle(title).position === 'sticky') {
+          overlap += title.getBoundingClientRect().height;
+        }
         var top = window.scrollY + target.getBoundingClientRect().top - overlap - 12;
         window.scrollTo({
           top: Math.max(top, 0),

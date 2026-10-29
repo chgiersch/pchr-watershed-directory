@@ -86,13 +86,32 @@
   // script placed low on the page – the frame's load event has already fired
   // and will not fire again), and on the load event, for a map still loading
   // now. A hello posted before the map's listener exists is dropped by the
-  // browser; a duplicate reaching a map that already knows us is answered
-  // again with the same ready message, which is harmless.
+  // browser - and that is not a corner case: the map only listens once
+  // MapLibre has loaded AND its five data files have arrived, so on a cold
+  // cache every fixed-schedule hello can land too early. That left the
+  // map with nowhere to reply and killed map->directory silently on the
+  // first cold load of the preview (2026-10-15). So: hail every 400ms
+  // until any message arrives back from the map, then stop. A duplicate
+  // reaching a map that already knows us is answered again with the same
+  // ready message, which is harmless. Capped so a dead or foreign frame
+  // doesn't tick forever.
   function hello() {
     send({ type: 'pchr:hello' });
   }
-  hello();
-  frame.addEventListener('load', hello);
+  var helloTimer = null;
+  function startHello() {
+    clearInterval(helloTimer);
+    var ticks = 0;
+    hello();
+    helloTimer = setInterval(function () {
+      if (++ticks > 50) { clearInterval(helloTimer); return; }
+      hello();
+    }, 400);
+  }
+  startHello();
+  // The frame reloading (user action, bfcache oddity) resets the map's
+  // memory of us - start hailing again until the fresh document answers.
+  frame.addEventListener('load', startHello);
 
   /* ---- Directory -> map ---------------------------------------------- */
 
@@ -140,6 +159,8 @@
     // from the map's origin could post here. The map frame's own window is
     // the only legitimate partner (review finding 23).
     if (ev.origin !== MAP_ORIGIN || ev.source !== frame.contentWindow) return;
+    // Any authenticated message proves the channel is live - stop hailing.
+    clearInterval(helloTimer);
     var msg = ev.data;
     if (!msg || typeof msg !== 'object') return;
 

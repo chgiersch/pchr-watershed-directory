@@ -221,21 +221,20 @@ body {
 }
 
 /* Sticky positioning plus a tall map leaves no room to read on a phone, so
-   below this width the map scrolls away normally. */
+   below this width the map scrolls away normally. The matching
+   .dir-section__title overrides live AFTER that rule's own block further
+   down - source order decides the cascade here, see the note there. Change
+   the 40rem breakpoint in both places together. */
 @media (max-width: 40rem) {
   .map-panel { position: static; }
   .map-panel__frame { height: 44vh; }
-  /* No pinned map to clear on a phone - titles pin to the viewport top. */
-  .dir-section__title { top: 0; }
 }
 
 /* Respect a user who has asked for less motion - sticky elements that track
-   scrolling are a common trigger. */
+   scrolling are a common trigger. Title counterpart sits after
+   .dir-section__title for the same source-order reason as above. */
 @media (prefers-reduced-motion: reduce) {
   .map-panel { position: static; }
-  /* Same reasoning as the panel: elements that track scrolling are a
-     common vestibular trigger, so the titles scroll normally too. */
-  .dir-section__title { position: static; }
 }
 
 /* ---- Directory ---- */
@@ -279,6 +278,23 @@ body {
   top: calc(var(--wmd-frame-h) + 1.5 * var(--wmd-rem) + 1px);
   z-index: 2;
   background: var(--wmd-paper);
+}
+
+/* These two overrides MUST come after the rule above. A media query adds no
+   specificity, so an equal-specificity override placed earlier in the file
+   loses on source order. They first shipped inside the map panel's @media
+   blocks (2026-10-15) and never applied: on a phone the map scrolled away
+   while titles pinned a desktop map-height down the screen, and
+   reduced-motion readers still got sticky titles (live click-through,
+   2026-11-04). The 40rem breakpoint must match the .map-panel block above. */
+@media (max-width: 40rem) {
+  /* No pinned map to clear on a phone - titles pin to the viewport top. */
+  .dir-section__title { top: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Same reasoning as the panel: elements that track scrolling are a
+     common vestibular trigger, so the titles scroll normally too. */
+  .dir-section__title { position: static; }
 }
 
 .dir-section__intro {

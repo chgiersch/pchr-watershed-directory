@@ -293,17 +293,27 @@
       margin-bottom: 7px;
     }
 
-    .popup-section + .popup-section .popup-org-name {
+    /* General sibling (~), not adjacent (+): the bridge note sits between
+       the first and second sections, which broke the adjacent match - the
+       wider-extent names rendered full-size and the clicked entry lost its
+       visual precedence (live click-through, 2026-11-04). */
+    .popup-section ~ .popup-section .popup-org-name {
       font-size: 13px;
     }
 
     /* Bridge line before the wider-extent sections. Same 5.4:1 grey as the
-       section labels; italic so it reads as a note, not another heading. */
+       section labels; italic so it reads as a note, not another heading.
+       The note is a sibling BETWEEN sections, so it also broke the
+       .popup-section + .popup-section divider whenever it was present -
+       it carries the same rule itself to close off the local answer
+       (live click-through, 2026-11-04). */
     .popup-note {
       font-size: 11px;
       font-style: italic;
       color: #5c6b75;
-      margin: 10px 0 2px;
+      margin: 12px 0 2px;
+      padding-top: 10px;
+      border-top: 1px solid #dce4e8;
     }
 
     /* One-time hint chip over the map. aria-hidden - it duplicates guidance
@@ -845,7 +855,12 @@
       type: 'raster-dem',
       url: `pmtiles://${terrainUrl}`,
       encoding: 'terrarium',
-      tileSize: 256
+      tileSize: 256,
+      // The archive's own credit string - mapterhorn.com/attribution lists
+      // the per-source terms (Copernicus GLO-30 supplies this area). Without
+      // this field the credit never reaches the attribution control: the
+      // pmtiles protocol drops archive metadata (licence review, 2026-11-04).
+      attribution: '<a href="https://mapterhorn.com/attribution">© Mapterhorn</a>'
     });
     map.addLayer({
       id: 'hillshade',

@@ -497,6 +497,18 @@ MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
     loading="lazy"></iframe>
 </div>"""
 
+# One footer for both outputs. It was hard-coded into the standalone PAGE
+# template only, so the WordPress bundle never carried it and the live county
+# page silently lost the service-area caveat the stakeholders approved on the
+# preview (live click-through, 2026-11-04).
+PAGE_FOOTER = """<footer class="page-footer">
+  <p>
+    Service-area boundaries are clipped to the Roaring Fork Watershed and are
+    not legal boundaries. Several districts extend beyond the watershed; each
+    organization's full service area is described in its entry above.
+  </p>
+</footer>"""
+
 
 def build_fragment(orgs):
     out = []
@@ -570,13 +582,7 @@ __MAP_EMBED__
 __FRAGMENT__
 </main>
 
-<footer class="page-footer">
-  <p>
-    Service-area boundaries are clipped to the Roaring Fork Watershed and are
-    not legal boundaries. Several districts extend beyond the watershed; each
-    organization's full service area is described in its entry above.
-  </p>
-</footer>
+__PAGE_FOOTER__
 
 <!-- Optional. Links the directory to the map in both directions. Everything
      above works without it. -->
@@ -664,6 +670,7 @@ def build_wordpress_bundle(fragment: str) -> str:
     return (f"{header}\n<style>\n{css}</style>\n\n"
             f"{embed}\n\n"
             f'<div id="directory" class="directory">\n{fragment}\n</div>\n\n'
+            f"{PAGE_FOOTER}\n\n"
             f"<script>\n{js}</script>\n")
 
 
@@ -692,6 +699,7 @@ def main():
     page = (PAGE
             .replace("__FRAGMENT__", fragment)
             .replace("__PROTOTYPE_NOTE__", PROTOTYPE_NOTE)
+            .replace("__PAGE_FOOTER__", PAGE_FOOTER)
             .replace("__MAP_EMBED__", MAP_EMBED.replace("__MAP_URL__", MAP_URL_LOCAL)))
     OUT_PAGE.write_text(page)
 

@@ -65,9 +65,12 @@ the parent page. The symptom is maddening: the directory shows new code, the map
 and the postMessage link between them silently dies (8/27/26). The script sends `no-store`, so
 what's in the browser is always what's on disk.
 
-**Port 8000 specifically.** `index.html` validates the origin of every `postMessage` against a
-fixed allowlist, and only `localhost:8000` and `127.0.0.1:8000` are on it. On any other port the
-page loads and looks correct, but the map and directory silently stop talking to each other.
+**Any port works, but only on loopback.** Both ends of the map/directory link pin origins. The
+shipped allowlist in `index.html` is https-only (the county site and GitHub Pages), and
+`directory-map-link.js` targets the published map origin. Each end relaxes that only when it is
+itself running on `localhost`, `127.0.0.1` or `[::1]`: the map then also accepts loopback hosts,
+and the link script takes the map origin from the iframe. Served from any other hostname, neither
+relaxation runs, which is what keeps a page on someone's laptop from driving the published map.
 
 Open `directory.html`, not `index.html`. On its own `index.html` is just the map; the two-way link
 only exists when the map is embedded in the host page.
@@ -76,25 +79,24 @@ only exists when the map is embedded in the host page.
 
 In production the directory lives on the county's WordPress and the map is an iframe from GitHub
 Pages - two different origins, with the origin checks on both sides doing real work. Served
-locally, both files come from the same origin and `directory-map-link.js` detects that, so none of
-that code actually runs.
+locally, both files come from the same origin and every origin check passes trivially.
 
 `localhost` and `127.0.0.1` are distinct origins to a browser despite being the same server, and
-both are already allowlisted - so the real path can be exercised without touching `index.html`:
+both are loopback - so the real path can be exercised with one edit to a generated file:
 
 1. Point the iframe at the other hostname: in `directory.html`, `src="index.html"` becomes
    `src="http://localhost:8000/index.html"`
-2. In `directory-map-link.js`, set `MAP_ORIGIN` to `'http://localhost:8000'`
-3. Load the page at **http://127.0.0.1:8000/directory.html** - note the different hostname; using
+2. Load the page at **http://127.0.0.1:8000/directory.html** - note the different hostname; using
    `localhost` for both puts you back to same-origin and tests nothing
-4. Confirm both directions work: an org in a map popup scrolls the directory, and "Show on map"
-   moves the map
+3. Confirm both directions work: an org in a map popup scrolls the directory, and "Show on map"
+   moves the map. Nothing in `directory-map-link.js` needs editing: on loopback it reads the map
+   origin from the iframe src.
 
-Then the negative case, which is the half that actually proves the check is enforced. Set
-`MAP_ORIGIN` to `'http://localhost:9999'` and reload. Both directions should stop working. Only
-one of them reports anything: `postMessage` throws a visible console error going out, while
-incoming messages are dropped by a silent guard clause. To see that rejection rather than infer
-it, add a listener of your own before clicking:
+Then the negative case, which is the half that actually proves the checks are enforced. In
+`index.html`, remove `'127.0.0.1'` from `LOOPBACK_HOSTS` and reload. The map now refuses the
+page's hello and its focus messages, so both directions stop working, and nothing reports it:
+incoming messages are dropped by silent guard clauses on both sides. To see the rejection rather
+than infer it, add a listener of your own in the map frame's console before clicking:
 
 ```js
 window.addEventListener('message', e => console.log('RX from', e.origin, e.data));
@@ -106,11 +108,11 @@ Revert when finished. `directory.html` is generated, so rebuild rather than hand
 
 ```bash
 python3 scripts/build_directory.py
-git checkout directory-map-link.js
-git status --short        # must be empty
+git checkout index.html
+git status --short
 ```
 
-Do not commit a hardcoded `localhost` in either file.
+The last command must print nothing. Do not commit a loopback edit in either file.
 
 ## Folder layout
 
@@ -156,7 +158,7 @@ and both copies were being drawn — producing overlapping outlines that read as
 fragments across the map. Consolidated 7/30/26.
 
 `data/reference/` now holds only shapes that are *not* any org's service area: the HUC-2 context
-outline, the rivers layer, and the caucus boundaries (pending a scope decision — see Gwen's list).
+outline, the rivers layer, and the caucus boundaries (pending a scope decision — see the county contact's list).
 
 Shapefiles are gitignored. They're a derived format, and keeping a committed `.shp` beside every
 `.geojson` is the same drift problem in a different costume. Export locally if a desktop tool
@@ -179,7 +181,7 @@ needs to read the data.
    python clean_org_boundary.py ../data/raw/swsd_district_boundary.kml \
      "Snowmass Water and Sanitation District" "SWSD" "Water Providers" "swsd.org" \
      "KML export via Google Earth" "2026-06-24" "" \
-     "Provided by Darrell Smith. Service area boundary, general perimeter."
+     "Provided by district staff. Service area boundary, general perimeter."
    ```
 
 3. **Check the script output** - it prints validity, approximate area, and bounds as a sanity
@@ -207,7 +209,9 @@ CBRT/CWCB/CRD all use the CO West Slope basin. So geometry and org attributes ar
 | `caveat` | Provenance and known limitations, including any cleaning applied |
 
 **`data/clean/orgs.json`** — one row per org: `org_name`, `org_short`, `category`, `website`,
-`boundary_id`, `category_confirmed`, and an org-specific `caveat`. No geometry.
+`boundary_id`, `category_confirmed`, an org-specific `caveat`, and for water providers a
+`water_source` (optional while the county is still confirming some; `scripts/check.py` lists which).
+No geometry.
 
 `index.html` draws each boundary once from `boundaries.geojson`, then joins to `orgs.json` on
 `boundary_id` at click-time so the popup can list every org tied to that shape. `name`/`areasqkm`/
@@ -226,34 +230,34 @@ kept as-is because it's already consistent across every file and nothing is gain
 
 | Org | Status | File received | Cleaned |
 |---|---|---|---|
-| Snowmass Water and Sanitation District | Done | KML via Darrell Smith, 6/24/26 | ✓ |
+| Snowmass Water and Sanitation District | Done | KML via district staff, 6/24/26 | ✓ |
 | Roaring Fork Conservancy | Resolved - Roaring Fork Watershed, no separate file needed | | |
-| RWAPA | Resolved - confirmed whole Roaring Fork Watershed by Gwen, 7/2/26; no separate file needed | | |
-| Pitkin County Healthy Rivers | Resolved - HUC-8 boundary is the "official" HR boundary per Tim Braun (county), 6/15/26; no separate file needed | | |
-| CVEPA | Resolved - confirmed by CVEPA via Gwen, 7/28/26: service area is only the Crystal River Watershed, matches HUC-10 1401000407 "Crystal River" (938 km²). Using that boundary directly; no separate org shapefile needed. | | |
-| Division of Water Resources (DWR) | Pending - no map exists, will hand-draw. Dividing line is near Emma, not El Jebel as first thought (per Heather Ramsey via Gwen, 7/2/26): Bill covers Emma-up/Aspen-Basalt side, Heather covers Emma-down/Carbondale-El Jebel side | | |
+| RWAPA | Resolved - confirmed whole Roaring Fork Watershed by county Healthy Rivers staff, 7/2/26; no separate file needed | | |
+| Pitkin County Healthy Rivers | Resolved - HUC-8 boundary is the "official" HR boundary per county staff, 6/15/26; no separate file needed | | |
+| CVEPA | Resolved - confirmed by CVEPA via county Healthy Rivers staff, 7/28/26: service area is only the Crystal River Watershed, matches HUC-10 1401000407 "Crystal River" (938 km²). Using that boundary directly; no separate org shapefile needed. | | |
+| Division of Water Resources (DWR) | Pending - no map exists, will hand-draw. Dividing line is near Emma, not El Jebel as first thought (per the DWR water commissioners via county Healthy Rivers staff, 7/2/26): one commissioner covers Emma-up/Aspen-Basalt side, the other Emma-down/Carbondale-El Jebel side | | |
 | Colorado Basin Roundtable | Pending - likely no polygon, point/label only | | |
 | Colorado Water Conservation Board | Pending - likely no polygon, point/label only | | |
 | Colorado River District | Pending - likely no polygon, point/label only | | |
-| Basalt Water Conservancy District | Done | KML from Eric Mangeot (Sphero Environmental), 7/9/26. Exported as a closed boundary line rather than a polygon - clean_org_boundary.py now auto-converts closed lines to polygons. | ✓ |
+| Basalt Water Conservancy District | Done | KML from a district consultant, 7/9/26. Exported as a closed boundary line rather than a polygon - clean_org_boundary.py now auto-converts closed lines to polygons. | ✓ |
 | West Divide Water Conservancy District | Done - real, FULL official district boundary pulled from Colorado DOLA's statewide "All Active Districts" dataset (services3.arcgis.com, 7/28/26), ~2,009 sq km, De Beque/Rifle/Silt through Glenwood Springs/Carbondale to Capitol Peak/Marble. Supersedes both the Pitkin-County-only sliver and the RF-HUC8-minus-Crystal-HUC10 approximation - this is authoritative statewide data, not a guess. | | ✓ |
 | Roaring Fork Water and Sanitation District | Done - real official boundary pulled from Colorado DOLA's "Water and Sanitation Districts" dataset (7/28/26), ~7.3 sq km, matches the 2007 CAD map's Iron Bridge/Aspen Glen/Teller Springs/Cottrell Ranch clusters along CR 109. | RFWSDmap.pdf | ✓ |
 | Mid-Valley Metropolitan District | Done - real official boundary pulled from Colorado DOLA's "All Active Districts" dataset (7/28/26), ~8.6 sq km, matches the PLSS-referenced SGM map (LGID-64211, El Jebel/Emma area). | mvmd_map.pdf | ✓ |
-| Town of Carbondale | Done - real official municipal boundary from Colorado DOLA's "Municipal Boundaries" dataset (7/28/26), ~5.2 sq km. Water supply is the Crystal River, with substantial water rights on it (per Gwen, 7/28/26) - noted in the popup description. | | ✓ |
-| City of Aspen | Done - real official municipal boundary from Colorado DOLA's "Municipal Boundaries" dataset (7/28/26), ~10.0 sq km. Water comes from Maroon and Castle Creeks, with new storage ideas at Woody Creek to replace the reservoirs given up on Maroon/Castle Creeks (per Gwen, 7/28/26) - noted in the popup description. | | ✓ |
-| City of Glenwood Springs | Done - real official municipal boundary from Colorado DOLA's "Municipal Boundaries" dataset (7/28/26), ~15.4 sq km. Water supply is Grizzly and No Name creeks plus some Roaring Fork water rights (per Gwen, 7/28/26) - noted in the popup description. | | ✓ |
+| Town of Carbondale | Done - real official municipal boundary from Colorado DOLA's "Municipal Boundaries" dataset (7/28/26), ~5.2 sq km. Water supply is the Crystal River, with substantial water rights on it (per county Healthy Rivers staff, 7/28/26) - noted in the popup description. | | ✓ |
+| City of Aspen | Done - real official municipal boundary from Colorado DOLA's "Municipal Boundaries" dataset (7/28/26), ~10.0 sq km. Water comes from Maroon and Castle Creeks, with new storage ideas at Woody Creek to replace the reservoirs given up on Maroon/Castle Creeks (per county Healthy Rivers staff, 7/28/26) - noted in the popup description. | | ✓ |
+| City of Glenwood Springs | Done - real official municipal boundary from Colorado DOLA's "Municipal Boundaries" dataset (7/28/26), ~15.4 sq km. Water supply is Grizzly and No Name creeks plus some Roaring Fork water rights (per county Healthy Rivers staff, 7/28/26) - noted in the popup description. | | ✓ |
 | Town of Basalt | Done - real official municipal boundary from Colorado DOLA's "Municipal Boundaries" dataset (7/28/26), ~5.3 sq km. One of the original 3 PDF-only orgs (alongside RFWSD/Mid-Valley Metro) - resolved the same way instead of manually georeferencing the PDF. Straddles Eagle/Pitkin/Garfield county lines. | | ✓ |
 | Snowmass Capitol Creek Caucus | Real boundary pulled directly from Pitkin County GIS (`data/reference/caucuses.geojson`, 7/28/26) - no shapefile request needed. Scope question below: is this one of 13 Pitkin caucuses to include, or all 13? | | |
 | Crystal River Caucus | Real boundary pulled directly from Pitkin County GIS, same file as above - no shapefile request needed. Same scope question as Snowmass Capitol Creek Caucus. | | |
-| Other 11 Pitkin caucuses (Emma, Fryingpan Valley, Woody Creek, Tennis Club, Smuggler, Castle Creek, East of Aspen, Maroon Creek, Owl Creek, Upper Snowmass Creek, Brush Creek) | Real boundaries already pulled (same file), not yet decided whether they belong on a water-org-specific map since most aren't water-themed. Pending scope call with Gwen. | | |
+| Other 11 Pitkin caucuses (Emma, Fryingpan Valley, Woody Creek, Tennis Club, Smuggler, Castle Creek, East of Aspen, Maroon Creek, Owl Creek, Upper Snowmass Creek, Brush Creek) | Real boundaries already pulled (same file), not yet decided whether they belong on a water-org-specific map since most aren't water-themed. Pending scope call with county Healthy Rivers staff. | | |
 
-## Gwen's August to-do list (as of 7/28/26)
+## County contact's August to-do list (as of 7/28/26)
 
 Down to one real data gap and one scope question. Pulling directly from Colorado's statewide DOLA GIS service (services3.arcgis.com, the state's authoritative special-district/municipal tracking system - separate from Pitkin County's own GIS server used earlier) resolved West Divide, RFWSD, Mid-Valley Metro, and all four municipalities (Carbondale, Aspen, Glenwood Springs, Basalt) in one pass, so none of those need shapefile requests anymore.
 
-- **Only real data gap left:** Division of Water Resources (DWR) - no map exists anywhere; the Bill/Heather Emma-line split still needs to be hand-drawn. Not something a GIS pull can solve.
+- **Only real data gap left:** Division of Water Resources (DWR) - no map exists anywhere; the two commissioners' Emma-line split still needs to be hand-drawn. Not something a GIS pull can solve.
 - **Scope decision, not data-gathering:** how many of the 13 officially recognized Pitkin caucuses belong on this map - just the 2 water-named ones (Snowmass/Capitol, Crystal River), or all 13? Boundary data is already in hand for all of them either way.
-- **Worth a sanity check with the district, not urgent:** West Divide's DOLA-sourced boundary is the full official district (~2,009 sq km) - worth a quick "does this look right to you?" the next time Gwen's in touch with them, since state-maintained special-district data is known to sometimes trace back to old scanned drawings.
+- **Worth a sanity check with the district, not urgent:** West Divide's DOLA-sourced boundary is the full official district (~2,009 sq km) - worth a quick "does this look right to you?" the next time county staff are in touch with them, since state-maintained special-district data is known to sometimes trace back to old scanned drawings.
 - **No longer needed:** shapefiles/KML/PDFs from RFWSD, Mid-Valley Metro, Town of Basalt, West Divide, or the other three municipalities, and CVEPA/Snowmass Capitol Creek Caucus/Crystal River Caucus boundary confirmations (all resolved with real data, 7/28/26). This closes out all three of the original PDF-only orgs (RFWSD, Mid-Valley Metro, Basalt) - none needed manual PDF georeferencing after all.
 
 ## Reference layers (not org-specific)
@@ -290,7 +294,7 @@ other boundaries rather than in `reference/`.
 
 `data/reference/` now holds only the two shapes that aren't anyone's service area:
 `nhd_rivers.geojson` and `caucuses.geojson` (all 13 official Pitkin caucuses — scope decision,
-2 vs. 13, still pending with Gwen).
+2 vs. 13, still pending with county Healthy Rivers staff).
 
 `upper_colorado_region.geojson` (HUC-2 context outline) went too, in the 7/30/26 clip: once
 everything was cut to the Roaring Fork HUC-8 and the zoom floor was set to that extent, a

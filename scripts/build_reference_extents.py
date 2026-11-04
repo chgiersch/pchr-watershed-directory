@@ -5,7 +5,7 @@ true extents of the basin- and state-scale organizations.
 
 WHY THESE EXIST
 ---------------
-The county's review (Tim Braun, 8/26/26) landed on a real gap: statewide and
+The county's review (8/26/26) landed on a real gap: statewide and
 basin-scale organizations were unrecognizable as such on a watershed-only map.
 The fix is letting the map zoom out to Colorado, with each of those orgs shown
 at its actual extent instead of all of them borrowing the watershed highlight.

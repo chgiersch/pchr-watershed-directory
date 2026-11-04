@@ -230,6 +230,23 @@ def run_embed_checks():
           not unhashed,
           f"Without a hash a CDN compromise executes unnoticed; found: {unhashed}")
 
+    # Every addSource'd tiled archive must carry its own attribution: the
+    # pmtiles protocol drops archive metadata, so a credit that is not wired
+    # here never reaches the attribution control. The terrain archive shipped
+    # uncredited for two months before the licence review caught it
+    # (2026-11-04). If this finds no tiled sources at all, the sources moved -
+    # update this check rather than deleting it.
+    # Lazy match up to the first "});" - the source object embeds a template
+    # literal (${terrainUrl}) whose braces defeat a brace-free character
+    # class, which made the first version of this check find nothing.
+    src_blocks = re.findall(r"addSource\(\s*'([^']+)'\s*,\s*\{(.*?)\}\s*\)\s*;",
+                            map_js, re.S)
+    tiled = [(name, body) for name, body in src_blocks if "pmtiles://" in body]
+    uncredited = [name for name, body in tiled if "attribution" not in body]
+    check("tiled map sources carry an attribution",
+          bool(tiled) and not uncredited,
+          f"pmtiles drops archive metadata; uncredited: {uncredited or 'NO tiled addSource found'}")
+
     # The library guard must run BEFORE the first CDN global is dereferenced.
     # Without it a missing script throws a ReferenceError on line one and
     # aborts the block before the data-load .catch (the other notice path)

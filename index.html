@@ -845,7 +845,12 @@
       type: 'raster-dem',
       url: `pmtiles://${terrainUrl}`,
       encoding: 'terrarium',
-      tileSize: 256
+      tileSize: 256,
+      // The archive's own credit string - mapterhorn.com/attribution lists
+      // the per-source terms (Copernicus GLO-30 supplies this area). Without
+      // this field the credit never reaches the attribution control: the
+      // pmtiles protocol drops archive metadata (licence review, 2026-11-04).
+      attribution: '<a href="https://mapterhorn.com/attribution">© Mapterhorn</a>'
     });
     map.addLayer({
       id: 'hillshade',

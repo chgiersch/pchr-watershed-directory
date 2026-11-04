@@ -45,7 +45,8 @@ USAGE
 -----
     python3 scripts/build_directory.py                # write directory.html
     python3 scripts/build_directory.py --wordpress      # self-contained bundle
-                                                        # for one WP HTML block
+                                                        # for the county page's
+                                                        # Raw Content element
 """
 
 import argparse
@@ -78,7 +79,7 @@ SECTIONS = [
         # basin. Without it the heading doesn't distinguish itself from the
         # basin-scale section below.
         "Local watershed organizations",
-        "Organizations working at the scale of the Roaring Fork watershed or one "
+        "Organizations working at the scale of the Roaring Fork Watershed or one "
         "of its sub-watersheds - research, restoration, advocacy and regional "
         "planning.",
     ),
@@ -90,16 +91,26 @@ SECTIONS = [
         # heading here than in the map popup. The popup groups by geographic
         # extent, this groups by type of body. Both are right on their own axis.
         "Basin and statewide organizations",
-        "Agencies and bodies that set water policy, administer water rights and "
-        "fund projects at state or Colorado River basin scale. Their "
-        "jurisdictions reach well beyond the Roaring Fork - each entry states "
-        "its actual extent.",
+        "Agencies and organizations that set water policy, administer water "
+        "rights and fund projects at state or Colorado River basin scale. "
+        "Their jurisdictions reach well beyond the Roaring Fork Watershed – "
+        "each entry states its service area.",
     ),
     (
         "Water providers",
         "The districts and municipalities that deliver water, treat wastewater, "
         "or hold water rights for a defined service area. These are the "
         "organizations most likely to serve a specific address.",
+        # Both sentences are the program coordinator's (the first from her
+        # October call notes, the second from her 10/23 answers in red,
+        # verbatim). They qualify the section's claim to completeness, so
+        # they sit right under the intro rather than at the section's foot.
+        "Note: there are smaller water providers serving individual rural "
+        "subdivisions that aren't listed here. The transmountain diversion "
+        "company and project listed are not direct retail water providers "
+        "to households, but rather bulk water suppliers or infrastructure "
+        "systems that transport water across the Continental Divide from "
+        "the Western Slope to the Eastern Slope of Colorado.",
     ),
 ]
 
@@ -111,8 +122,8 @@ CAUCUS_SECTION = {
     "intro": (
         "Pitkin County has 13 officially recognized caucuses - neighborhood "
         "organizations that advise the Board of County Commissioners on land "
-        "use and other matters affecting their area. Two are named for the "
-        "creeks they sit on and regularly engage on water issues."
+        "use and other matters affecting their area. Three are named for the "
+        "waterways they sit on and regularly engage on water issues."
     ),
     "entries": [
         (
@@ -122,6 +133,19 @@ CAUCUS_SECTION = {
             "valleys and has pursued projects to protect stream flows in both "
             "creeks.",
             "snowcapcaucus.org",
+        ),
+        (
+            "Upper Frying Pan Valley Caucus",
+            "Upper Fryingpan River valley",
+            "Also known as the Frying Pan Caucus. Encompasses all properties "
+            "and watersheds from Ruedi Dam east up the Frying Pan River to "
+            "the Continental Divide, including tributaries in Pitkin and "
+            "Eagle counties. Formed in January 1997, a legally constituted "
+            "neighborhood coalition acting as a local planning and advisory "
+            "body for residents and property owners, guided by the Upper "
+            "Fryingpan Valley Master Plan, a long-range framework for land "
+            "use and development.",
+            None,
         ),
         (
             "Crystal River Caucus",
@@ -233,7 +257,12 @@ def display_name(org):
     """
     name = org["org_name"]
     short = org.get("org_short", "")
-    if not short or short.lower() in name.lower():
+    # abbr_hidden: the short code stays (it is the anchor id and the map
+    # popup's key) but never renders. Added for Glenwood Springs - the
+    # other municipalities skip the abbreviation via the substring rule
+    # above, so "(GWS)" made one town look branded when nobody uses the
+    # initialism (October county review).
+    if not short or short.lower() in name.lower() or org.get("abbr_hidden"):
         return esc(name)
     return f'{esc(name)} <span class="org__abbr">({esc(short)})</span>'
 
@@ -265,6 +294,9 @@ def funding_badge(value, who):
             f"got {raw!r}")
     offers = m.group(1).lower() == "yes"
     detail = m.group(2).strip() if offers else ""
+    # Rendered as its own sentence under the label - capitalize the first
+    # word whatever the roster wrote (October county review).
+    detail = detail[:1].upper() + detail[1:]
     return offers, detail
 
 
@@ -435,28 +467,32 @@ PROTOTYPE_NOTE = """<p class="prototype-note">
 # (buttons are self-labeling; the map shows a first-click hint), so this list
 # is the reference copy, not the only teacher. Native <details>: keyboard
 # operable, screen-reader friendly, WPML-translatable, no script.
+# The intro reads as a directory of organizations, not of service areas -
+# the county contact's ask in the 9/9/26 site review, after the first
+# wording ("map and directory of water management service areas") led with
+# the map's geometry rather than the page's subject. It lives in the bundle
+# rather than the host page so the iframe's aria-describedby always resolves
+# and the wording ships under lint.
 MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
-    Interactive map and directory of water management service areas in the
-    Roaring Fork watershed; only organizations serving the watershed appear
-    on this page.
+    A comprehensive directory of the agencies and organizations that manage
+    water in the Roaring Fork Watershed &ndash; paired with an interactive
+    map showing their operating areas within the watershed.
 </p>
 <details class="map-help">
   <summary>How to use this page</summary>
   <ul>
     <li>Click any colored area on the map to see the organizations that
-        serve it, then select one to jump to its full entry below.</li>
-    <li>Press &ldquo;Show on map&rdquo; in any listing to highlight that
-        organization&rsquo;s territory &ndash; statewide and basin
-        organizations zoom out to their full extent within Colorado.</li>
-    <li>The house button on the map returns to the Roaring Fork
-        watershed view.</li>
+        serve it. Click on any of the listed organizations to jump to its
+        full entry below.</li>
+    <li>Click &ldquo;Show on map&rdquo; at the bottom of any listing to
+        highlight that organization&rsquo;s service area.</li>
   </ul>
 </details>
 <div class="map-panel">
   <iframe
     class="map-panel__frame"
     src="__MAP_URL__"
-    title="Map of water management service areas in the Roaring Fork watershed"
+    title="Map of water management service areas in the Roaring Fork Watershed"
     aria-describedby="map-intro"
     loading="lazy"></iframe>
 </div>"""
@@ -464,7 +500,12 @@ MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
 
 def build_fragment(orgs):
     out = []
-    for title, intro in SECTIONS:
+    for entry in SECTIONS:
+        # A section is (title, intro) or (title, intro, note) - the note is
+        # a qualifier on the section's completeness and renders between the
+        # intro and the list, where a reader forms that expectation.
+        title, intro = entry[0], entry[1]
+        note = entry[2] if len(entry) > 2 else None
         members = [o for o in orgs if o.get("section") == title]
         if not members:
             continue
@@ -474,6 +515,8 @@ def build_fragment(orgs):
         out.append(f'<section class="dir-section" aria-labelledby="{slug}">')
         out.append(f'  <h2 class="dir-section__title" id="{slug}">{esc(title)}</h2>')
         out.append(f'  <p class="dir-section__intro">{esc(intro)}</p>')
+        if note:
+            out.append(f'  <p class="dir-section__note dir-section__note--lead">{esc(note)}</p>')
         out.append('  <div class="dir-section__list">')
         out.append("\n".join(render_entry(o) for o in members))
         out.append("  </div>")
@@ -484,7 +527,14 @@ def build_fragment(orgs):
     out.append(f'  <h2 class="dir-section__title" id="caucuses">{esc(c["title"])}</h2>')
     out.append(f'  <p class="dir-section__intro">{esc(c["intro"])}</p>')
     out.append('  <div class="dir-section__list">')
-    out.append("\n".join(render_caucus_entry(*e) for e in c["entries"]))
+    # Same alphabetical rule as the org sections. The entries are typed by
+    # hand in CAUCUS_SECTION and the county's 9/10 review found them out of
+    # order (Snowmass-Capitol Creek listed before Crystal River): the org sort
+    # only ever sees orgs.json, so nothing had touched this list. Sorting here
+    # rather than reordering the tuples means the next caucus added lands in
+    # place without anyone remembering the rule.
+    entries = sorted(c["entries"], key=lambda e: e[0].lower())
+    out.append("\n".join(render_caucus_entry(*e) for e in entries))
     out.append("  </div>")
     out.append(f'  <p class="dir-section__note">{esc(c["footer"])}</p>')
     out.append("</section>")
@@ -522,9 +572,9 @@ __FRAGMENT__
 
 <footer class="page-footer">
   <p>
-    Service-area boundaries are clipped to the Roaring Fork watershed and are
+    Service-area boundaries are clipped to the Roaring Fork Watershed and are
     not legal boundaries. Several districts extend beyond the watershed; each
-    organization's full jurisdiction is described in its entry above.
+    organization's full service area is described in its entry above.
   </p>
 </footer>
 
@@ -555,13 +605,22 @@ def git_version() -> str:
 
 
 def build_wordpress_bundle(fragment: str) -> str:
-    """One self-contained blob for a single CORE Custom HTML block.
+    """One self-contained blob for the county page's Raw Content element.
 
     Styles and script are inlined rather than managed as separate WordPress
     pieces (Additional CSS, an enhanced block plugin's CSS/JS tabs) so the
-    page has zero dependencies beyond WordPress core. Core blocks survive
-    theme swaps and plugin removals; per-plugin storage does not. The whole
-    update procedure becomes: regenerate, select all, paste over the block.
+    bundle has no dependencies of its own. The whole update procedure is:
+    regenerate, select all, paste over the element's contents.
+
+    The county page is a Cornerstone (Pro theme) layout, adopted 2026-09-11 so
+    the page could carry the site's full-bleed banner. Until then the bundle
+    sat in a core Custom HTML block and the header warned never to open the
+    page in Cornerstone; that warning was a precaution, never a tested fact.
+    A draft built in Cornerstone showed the Raw Content element passes the
+    style and script blocks through intact, the sticky map survives the
+    section/row/column wrappers, and both link directions work. Raw Content
+    specifically - the Text element runs paragraph auto-formatting over its
+    contents, which would break the markup.
     """
     css = (REPO / "directory.css").read_text()
     js = (REPO / "directory-map-link.js").read_text()
@@ -584,8 +643,12 @@ def build_wordpress_bundle(fragment: str) -> str:
   - Do not hand-edit this block. Content is generated from the repository
     above (scripts/build_directory.py --wordpress); regenerate and paste the
     whole block to update.
-  - Edit this page with the WordPress editor only. Opening it in Cornerstone
-    and saving will overwrite this block.
+  - This page is a Cornerstone layout. The bundle lives in a Raw Content
+    element in its own section below the banner and headline sections; to
+    update, open that element and paste over its contents. Keep the
+    element's shortcode processing off (the script contains square
+    brackets) and never move the bundle into a Text element, which
+    auto-formats paragraphs and breaks the markup.
   - Only an Administrator should edit and save this page. WordPress strips
     <script> tags on save for lower roles, which silently disables the
     map/directory linking.
@@ -620,7 +683,7 @@ def main():
         OUT_WORDPRESS.write_text(bundle)
         print(f"Wrote {OUT_WORDPRESS.relative_to(REPO)} ({len(bundle):,} chars)")
         print(f"  iframe points at {MAP_URL_PUBLISHED}")
-        print("  Paste the ENTIRE file into one core Custom HTML block.")
+        print("  Paste the ENTIRE file over the county page's Raw Content element.")
         print("  That URL serves from main - make sure main is current first.")
         if "-dirty" in bundle.splitlines()[2]:
             print("  WARNING: built from uncommitted changes (version is -dirty).")
@@ -636,7 +699,7 @@ def main():
     for o in orgs:
         counts[o.get("section", "?")] = counts.get(o.get("section", "?"), 0) + 1
     print(f"Wrote {OUT_PAGE.relative_to(REPO)}")
-    for title, _ in SECTIONS:
+    for title, *_ in SECTIONS:   # sections are 2- or 3-tuples, see SECTIONS
         print(f"  {title:32} {counts.get(title, 0)}")
     print(f"  {'Caucuses':32} {len(CAUCUS_SECTION['entries'])}")
 

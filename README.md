@@ -410,8 +410,8 @@ double-line convention) is a planned post-launch polish item, not done yet.
 
 `index.html` wires up a `raster-dem` source + `hillshade` layer pointing at
 `data/basemap/roaring-fork-terrain.pmtiles`, from [Mapterhorn](https://mapterhorn.com)'s free,
-Terrarium-encoded elevation PMTiles (BSD-3 licensed, Copernicus DEM at 30m resolution for this
-area). **Generated 7/29/26** with:
+Terrarium-encoded elevation PMTiles (Copernicus DEM at 30m resolution for this area, under the
+Copernicus free and open data license - mapterhorn.com/attribution lists the per-source terms). **Generated 7/29/26** with:
 
 ```
 pmtiles extract https://download.mapterhorn.com/planet.pmtiles data/basemap/roaring-fork-terrain.pmtiles \
@@ -458,3 +458,28 @@ access-control-allow-origin: *
 
 Use `-r`, not `-I -H "Range: ..."`. The latter sends a HEAD request, which servers answer with
 `200` whether or not they support ranges - so it looks like a failure when nothing is wrong.
+
+## License
+
+The code in this repository is licensed under the [Apache License 2.0](LICENSE). It exists so
+another watershed or roundtable can legally reuse the machinery; without a license file, they
+couldn't.
+
+The license covers the code only. The following keep their own owners and terms:
+
+- **Directory content** - the organization descriptions and page copy. That text lives in
+  `data/clean/orgs.json`, in the section-copy strings inside `scripts/build_directory.py`, and in
+  the generated pages that reproduce it. It is the county program's compilation, and some of it is
+  the organizations' own words (mission statements). Reusing this code for another directory means
+  writing your own content.
+- **Everything under `data/`.** Boundaries and reference layers come from public sources -
+  Colorado DOLA, USGS WBD and NHD, US Census - plus one statewide conservancy-districts shapefile
+  received through county staff. Each row in `data/clean/boundaries.geojson` records its source,
+  pull date and caveats, and `data/raw/` keeps source files exactly as received, public-agency
+  pulls and district-provided files alike.
+- **The basemap archives.** `data/basemap/roaring-fork.pmtiles` is an extract of Protomaps' build
+  of [OpenStreetMap](https://www.openstreetmap.org/copyright) data (plus Natural Earth), so the
+  archive itself is offered under the [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/);
+  the OSM attribution wired into the map is a license requirement, not a courtesy - it must stay.
+  The terrain archive is built by [Mapterhorn](https://mapterhorn.com/attribution) from Copernicus
+  GLO-30 elevation data, under the Copernicus free and open data license.

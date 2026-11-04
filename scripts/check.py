@@ -133,6 +133,22 @@ def run_embed_checks():
           "The host theme's overflow-x:hidden on body silently disables "
           "position:sticky; clip provides the clipping without the breakage.")
 
+    # Sizing must not depend on the host page's root font size. The county
+    # theme sets html { font-size: 14px }, so from 2026-09-02 to 2026-09-11
+    # every rem in this stylesheet rendered at 14/16 of its designed value
+    # on the live page (labels at 9.6px) while the 16px-root standalone page
+    # looked fine. Lengths go through calc(N * var(--wmd-rem)) instead. A
+    # rem inside an @media query is exempt: there it resolves against the
+    # browser default, not the html element, so the host cannot shrink it.
+    # Comments are stripped first so prose that mentions rem is not flagged.
+    css_code = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    bare_rem = [line.strip() for line in css_code.splitlines()
+                if re.search(r"\d\s*rem\b", line)
+                and not line.lstrip().startswith("@media")]
+    check("CSS lengths use --wmd-rem, never bare rem", not bare_rem,
+          "rem resolves against the host page's 14px root and shrinks every "
+          f"size; write calc(N * var(--wmd-rem)). Offenders: {bare_rem[:3]}")
+
     # Link script safety envelope: the county page runs this verbatim.
     sinks = re.findall(r"innerHTML|insertAdjacent|document\.write|eval\(|"
                        r"new Function|localStorage|sessionStorage|"
@@ -278,7 +294,7 @@ def run_embed_checks():
 def run_data_checks():
     print("DATA")
     orgs = json.loads(ORGS.read_text())
-    check("orgs.json holds 17 organizations", len(orgs) == 17,
+    check("orgs.json holds 20 organizations", len(orgs) == 20,
           f"An accidental deletion or duplication is invisible until the page "
           f"renders short; found {len(orgs)}.")
     required = {"org_name", "org_short", "section", "scope", "tier"}
@@ -324,7 +340,7 @@ def run_data_checks():
     # research, so a new provider row cannot silently ship without the line;
     # a row that gains the field must leave this list, so the list stays an
     # honest record of what is still owed.
-    pending_source = {"BWCD", "MVMD", "WDWCD"}
+    pending_source = set()   # emptied 10/23/26 - every provider answered
     providers = [o for o in orgs if o.get("section") == "Water providers"]
     no_source = [o["org_short"] for o in providers
                  if not o.get("water_source")

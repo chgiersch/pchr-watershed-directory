@@ -155,6 +155,34 @@ def run_embed_checks():
           "https://pitkincountyrivers.com" in map_js,
           "Map->host messages are dropped unless the sender is allowlisted.")
 
+    # How each end learns the other's origin. Six review findings (3, 18, 4,
+    # 20, 22, 23) were one question in different clothes; these pin the
+    # answer so a later convenience edit cannot quietly reopen it.
+    check("link script reads the iframe src only inside the loopback gate",
+          bool(re.search(
+              r"if \(isLoopback\(window\.location\.hostname\)\) \{\s*try \{\s*"
+              r"var src = new URL\(frame\.getAttribute\('src'\)", link_js))
+          and link_js.count("getAttribute('src')") == 1,
+          "A lazy-load plugin rewrites the src before the script runs; an "
+          "ungated src-derived MAP_ORIGIN retargeted messages at the county's "
+          "own origin.")
+    allow = re.search(r"const ALLOWED_ORIGINS = \[(.*?)\];", map_js, re.S)
+    check("map allowlist ships https origins only",
+          bool(allow) and "http://" not in allow.group(1),
+          "The allowlist is the map's security boundary; a plain-http entry "
+          "is the first thing an external review flags. Loopback origins are "
+          "derived at runtime, never shipped.")
+    check("map learns the host origin from pchr:hello, not document.referrer",
+          "document.referrer" not in map_js and "'pchr:hello'" in map_js
+          and "'pchr:hello'" in link_js,
+          "Any Referrer-Policy stricter than the default empties the referrer "
+          "and the map->host half of the link dies with no error.")
+    check("both message handlers pin the sender window",
+          "ev.source !== frame.contentWindow" in link_js
+          and "ev.source !== window.parent" in map_js,
+          "Origin alone does not identify a sender - any frame from an "
+          "allowlisted origin could post; only the partnered window may.")
+
     # Third-party code the map executes. Every external script and stylesheet
     # must be pinned to an exact version and carry a subresource integrity
     # hash, so a compromised CDN or package release is refused by the browser
@@ -221,14 +249,28 @@ def run_embed_checks():
           "Data files are edited by hand and outlive their author; an "
           f"unescaped field is stored XSS. Bare interpolations: {bare[:5]}")
 
-    # Shipped and public source speaks in roles, not stakeholder names.
+    # Current files speak in roles, not individual names - page copy, data
+    # provenance, README and script comments alike (maintainer decision
+    # 2026-09-09; until then only the three pasted files were scanned).
+    # Surnames stand in where a bare first name would false-match ordinary
+    # words ("Bill", "Smith"). data/raw is received as-is and never edited,
+    # so it is deliberately outside the scan; this file holds the list and is
+    # skipped for that reason alone.
+    names = ("Gwen", "Garcelon", "Tim", "Braun", "Darrell", "Mangeot",
+             "Sphero", "Heather", "Ramsey", "Blakeslee")
+    scanned = [CSS, LINK_JS, MAP_HTML, ORGS, BOUNDARIES, REPO / "README.md",
+               *sorted((REPO / "data" / "reference").glob("*.geojson")),
+               *sorted(p for p in (REPO / "scripts").glob("*.py")
+                       if p.name != "check.py")]
     named = []
-    for path in (CSS, LINK_JS, MAP_HTML):
-        for name in ("Gwen", "Tim Braun", "Braun,"):
-            if name in path.read_text():
+    for path in scanned:
+        text = path.read_text()
+        for name in names:
+            if re.search(rf"\b{name}\b", text):
                 named.append(f"{path.name}:{name}")
-    check("shipped source free of stakeholder first names", not named,
-          f"Roles outlast people, and view-source is public; found: {named}")
+    check("current files free of stakeholder names", not named,
+          "Roles outlast people, the repository and data files are public, "
+          f"and the maintainer chose roles after asking the county; found: {named}")
 
 
 # ------------------------------------------------------------------ DATA ----
@@ -253,6 +295,48 @@ def run_data_checks():
           sections == expected,
           "A mismatched string silently produces an EMPTY directory section "
           f"rather than an error; found: {sorted(sections)}")
+
+    # The two roster fields the generator turns into public statements. The
+    # generator now refuses these values itself, but a lint failure names the
+    # row before anyone runs a build, and stands even if the generator's
+    # validation is later loosened. Both patterns mirror FUNDING_RE and
+    # WEBSITE_RE in build_directory.py; keep them in step by hand - this
+    # script deliberately does not import the generator it checks.
+    bad_funding = [o.get("org_short", "?") for o in orgs
+                   if not re.match(r"(?i)^(yes|no)\b",
+                                   str(o.get("provides_funding") or "").strip())]
+    check("every org answers provides_funding with Yes or No", not bad_funding,
+          "The generator once read every value not starting with 'no' as a "
+          "yes, so a blank, 'N/A' or 'Unknown' field published a green "
+          "'Offers funding' flag - a false statement about the organization "
+          f"(review finding 8); offending: {bad_funding}")
+    bad_site = [o.get("org_short", "?") for o in orgs
+                if o.get("website")
+                and not re.match(r"(?i)^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$",
+                                 o["website"])]
+    check("every org website is a bare host, no scheme or path", not bad_site,
+          "The link is built as https://{host}; a pasted 'https://example.org' "
+          "renders href=\"https://https://example.org\", a link that fails "
+          f"only when clicked (review finding 14); offending: {bad_site}")
+
+    # Water source is the county contact's top ask from the 9/9/26 review.
+    # Every provider must either state one or be listed here as pending her
+    # research, so a new provider row cannot silently ship without the line;
+    # a row that gains the field must leave this list, so the list stays an
+    # honest record of what is still owed.
+    pending_source = {"BWCD", "MVMD", "WDWCD"}
+    providers = [o for o in orgs if o.get("section") == "Water providers"]
+    no_source = [o["org_short"] for o in providers
+                 if not o.get("water_source")
+                 and o["org_short"] not in pending_source]
+    stale_pending = [o["org_short"] for o in providers
+                     if o.get("water_source") and o["org_short"] in pending_source]
+    check("every water provider states a water source or is listed as pending",
+          not no_source and not stale_pending,
+          "The field is optional in the generator, so a missing value renders "
+          "as nothing rather than an error; the pending list is the only "
+          f"record of what is still owed. Missing: {no_source}; on the "
+          f"pending list but populated: {stale_pending}")
 
     b = json.loads(BOUNDARIES.read_text())
     check("boundaries.geojson holds 11 features",

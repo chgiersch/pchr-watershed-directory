@@ -32,7 +32,7 @@ Then pick the feature you want and replace a row:
         --boundary-id bwcd_boundary \
         --source "Colorado conservancy districts shapefile via West Divide WCD" \
         --pulldate 2026-08-26 \
-        --caveat "Provided by Gwen Garcelon, 8/26/26." \
+        --caveat "Provided by county Healthy Rivers staff, 8/26/26." \
         --dry-run
 
 Drop --dry-run to actually write.

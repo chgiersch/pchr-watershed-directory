@@ -196,11 +196,35 @@ body {
   font-size: calc(0.8125 * var(--wmd-rem));
   color: var(--wmd-muted);
 }
+/* Own caret, same chevron as the entry rows. The native disclosure triangle
+   only renders while summary computes display: list-item, and the county
+   theme resets summary to block - the marker silently vanished on the live
+   page while the standalone page kept it (live click-through, 2026-11-04).
+   Drawing our own makes both deployments and all browsers match. */
 .map-help summary {
   cursor: pointer;
   width: fit-content;
   color: var(--wmd-navy);
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: calc(0.5 * var(--wmd-rem));
+  list-style: none;
+}
+.map-help summary::-webkit-details-marker { display: none; }
+.map-help summary::before {
+  content: '';
+  flex: 0 0 auto;
+  width: calc(0.4 * var(--wmd-rem));
+  height: calc(0.4 * var(--wmd-rem));
+  border-right: 2px solid var(--wmd-sky);
+  border-bottom: 2px solid var(--wmd-sky);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+.map-help[open] summary::before { transform: rotate(45deg); }
+@media (prefers-reduced-motion: reduce) {
+  .map-help summary::before { transition: none; }
 }
 .map-help summary:focus-visible {
   outline: 3px solid var(--wmd-sky);

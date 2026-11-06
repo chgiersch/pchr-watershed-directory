@@ -779,6 +779,42 @@
     new ResizeObserver(refit).observe(map.getContainer());
   }
 
+  // Self-heal for hostile embedding. WP Smush on the county site was found
+  // lazy-loading the embed iframe (2026-11-06): a 1x1 placeholder sat in
+  // src and the real page was swapped in later via
+  // contentWindow.location.replace(). The map initialized mid-swap, the
+  // canvas was created at that momentary layout size (~100px wide), and
+  // MapLibre's own resize tracking never caught up - the live map rendered
+  // as a thin strip until the window was resized by hand. The bundle now
+  // opts the iframe out of lazy-loaders, but the map must not depend on
+  // every future host plugin honoring that, so after load it compares the
+  // canvas against its container a few times and heals any mismatch. The
+  // camera is re-fit only while nobody has moved it: cameraTouched starts
+  // tracking once the initial fit has settled, so a reader's own view (or
+  // a Show-on-map zoom) is never yanked back to the watershed.
+  let cameraTouched = false;
+  function healFrameSize() {
+    const canvas = map.getCanvas();
+    const container = map.getContainer();
+    // 2px tolerance: canvas and container can legitimately disagree by a
+    // rounded subpixel; only a real layout failure exceeds it.
+    if (Math.abs(canvas.clientWidth - container.clientWidth) <= 2 &&
+        Math.abs(canvas.clientHeight - container.clientHeight) <= 2) {
+      return;
+    }
+    map.resize();
+    applyZoomConstraints();
+    if (!cameraTouched) fitToWatershed();
+  }
+  map.on('load', () => {
+    map.once('idle', () => {
+      map.on('movestart', () => { cameraTouched = true; });
+    });
+    // Immediately after load, then spaced retries: the broken state exists
+    // from construction, but a slow host page can still be reflowing.
+    [0, 500, 1500, 4000].forEach((ms) => setTimeout(healFrameSize, ms));
+  });
+
   // Navigation controls
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
 

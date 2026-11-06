@@ -182,6 +182,23 @@ def run_embed_checks():
           "A lazy-load plugin rewrites the src before the script runs; an "
           "ungated src-derived MAP_ORIGIN retargeted messages at the county's "
           "own origin.")
+
+    # The embed iframe itself must opt out of host-page lazy-load plugins.
+    # A site plugin (WP Smush) was found rewriting the iframe on the county
+    # page to a 1x1 placeholder whose real page was swapped in late via
+    # contentWindow.location.replace(); the map initialized mid-swap and
+    # rendered as a thin strip until the window was resized by hand
+    # (2026-11-06). Smush and its peers substring-match
+    # element markup against exclusion keywords; no-lazyload and
+    # data-no-lazy= are both on Smush's default list, and carrying two
+    # independent tokens survives either one being refactored away.
+    gen = (REPO / "scripts" / "build_directory.py").read_text()
+    iframe_m = re.search(r"<iframe\b.*?></iframe>", gen, re.S)
+    iframe_tag = iframe_m.group(0) if iframe_m else ""
+    check("embed iframe opts out of host lazy-load plugins",
+          "no-lazyload" in iframe_tag and 'data-no-lazy="1"' in iframe_tag,
+          "A host lazy-loader that rewrites the iframe re-breaks map sizing "
+          "and delays the handshake; the opt-out keywords keep it hands-off.")
     allow = re.search(r"const ALLOWED_ORIGINS = \[(.*?)\];", map_js, re.S)
     check("map allowlist ships https origins only",
           bool(allow) and "http://" not in allow.group(1),

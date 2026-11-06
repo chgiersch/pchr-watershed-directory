@@ -489,8 +489,17 @@ MAP_EMBED = """<p class="map-panel__intro" id="map-intro">
   </ul>
 </details>
 <div class="map-panel">
+  <!-- no-lazyload / data-no-lazy: opt-outs for host-page lazy-load plugins.
+       WP Smush on the county site rewrites this iframe to a 1x1 placeholder
+       swapped in late via location.replace(); the map initialized mid-swap
+       and rendered as a thin strip until the window was resized (found
+       live, 2026-11-06). Both tokens are substring-matched by Smush's
+       default exclusion list (no-lazyload, data-no-lazy=) and by other
+       common lazy-loaders; the native loading="lazy" below is the one lazy
+       mechanism this embed tolerates. -->
   <iframe
-    class="map-panel__frame"
+    class="map-panel__frame no-lazyload"
+    data-no-lazy="1"
     src="__MAP_URL__"
     title="Map of water management service areas in the Roaring Fork Watershed"
     aria-describedby="map-intro"
